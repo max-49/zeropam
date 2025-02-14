@@ -1,3 +1,6 @@
 ---
 - name: Backup old pam_unix.so
-  
+  hosts: localhost
+  tasks:
+    ansible.builtin.package:
+      
