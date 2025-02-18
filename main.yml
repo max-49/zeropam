@@ -1,6 +1,40 @@
 ---
-- name: Backup old pam_unix.so
+- name: Install required packages
   hosts: localhost
+  become: yes
   tasks:
-    ansible.builtin.package:
+    - name: Install gcc
+      ansible.builtin.package:
+        name: gcc
+        state: present
+
+    - name: Install PAM development module (Debian)
+      ansible.builtin.package:
+        name: libpam0g-dev
+        state: present
+      when: ansible_facts['os_family'] == 'Debian'
+      
+    - name: Install PAM developmemt module (RedHat)
+      ansible.builtin.package:
+        name: pam-devel
+        state: present
+      when: ansible_facts['os_family'] == 'RedHat'
+  tags:
+    - setup
+
+- name: Setup the module
+  hosts: targets
+  become: yes
+  tasks:
+    - include_role: 
+        name: deploy_debian
+      when: ansible_facts['os_family'] == 'Debian'
+    - include_role: 
+        name: deploy_redhat
+      when: ansible_facts['os_family'] == 'RedHat'
+  tags:
+    - deploy
+    
+
+
       

