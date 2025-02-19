@@ -20,6 +20,7 @@ Install Ansible on the host machine
 - Including the module through `auth optional {PAM_MODULE_DIR}/pam_backdoor.so` before the pam_permit.so line works on sending correct login information to the remote server, but it breaks the login screen for some reason (can still login to the machine through ssh)
 
 ## Todo
+- Encrypt message being sent from client
 - Automate use of module in /etc/pam.d/
 - Include a way to authenticate the same way pam_unix.so does
 - Create default server-side server with database
