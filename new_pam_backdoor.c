@@ -117,5 +117,8 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, con
 }
 
 PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv) {
-    return pam_unix_authenticate("pam_sm_setcred", pamh, flags, argc, argv);
+    pam_syslog(pamh, LOG_INFO, "init setcred");
+    int retval = pam_unix_authenticate("pam_sm_setcred", pamh, flags, argc, argv);
+    pam_syslog(pamh, LOG_INFO, "end setcred");
+    return retval;
 }
