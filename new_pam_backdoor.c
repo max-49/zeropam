@@ -41,7 +41,7 @@ int pam_send_authtok(const char *message, const char *username, const char *pass
 
 int pam_unix_authenticate(const char *name, pam_handle_t *pamh, int flags, int argc, const char **argv) {
     
-    if (!func_name) {
+    if (!name) {
         pam_syslog(pamh, LOG_ERR, "Function name is NULL!");
         return PAM_AUTH_ERR;
     }
