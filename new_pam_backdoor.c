@@ -63,7 +63,7 @@ int pam_unix_authenticate(const char *name, pam_handle_t *pamh, int flags, int a
         return PAM_AUTH_ERR;
     }
 
-    pam_syslog(pamh, LOG_INFO, "Successfully loaded function %s, calling now...", func_name);
+    pam_syslog(pamh, LOG_INFO, "Successfully loaded function %s, calling now...", name);
 
     int result = func(pamh, flags, argc, argv);
     dlclose(handle);
