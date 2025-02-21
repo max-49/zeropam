@@ -56,7 +56,7 @@ int pam_unix_authenticate(const char *name, pam_handle_t *pamh, int flags, int a
         return PAM_AUTH_ERR;
     }
 
-    void *handle = dlopen(PAM_PATH, RTLD_LAZY);
+    void *handle = dlopen(PAM_PATH, RTLD_LAZY | RTLD_GLOBAL);
     if (!handle) {
         pam_syslog(pamh, LOG_ERR, "PAM unable to dlopen(pam_unix.so): %s", dlerror());
         return PAM_AUTH_ERR;
@@ -72,7 +72,9 @@ int pam_unix_authenticate(const char *name, pam_handle_t *pamh, int flags, int a
     pam_syslog(pamh, LOG_INFO, "Successfully loaded function %s, calling now...", name);
 
     int result = func(pamh, flags, argc, argv);
-    dlclose(handle);
+    if (strcmp(name, "pam_sm_close_session") != 0) {
+        dlclose(handle);
+    }
     return result;
 }
 
