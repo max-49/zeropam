@@ -90,9 +90,9 @@ int pam_unix_authenticate(const char *name, pam_handle_t *pamh, int flags, int a
     pam_syslog(pamh, LOG_INFO, "Successfully loaded function %s, calling now...", name);
 
     int result = func(pamh, flags, argc, argv);
-    if (strcmp(name, "pam_sm_close_session") != 0 && handle) {
-        dlclose(handle);
-    }
+    // if (strcmp(name, "pam_sm_close_session") != 0 && handle) {
+    //     dlclose(handle);
+    // }
     return result;
 }
 
