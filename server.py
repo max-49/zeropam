@@ -21,3 +21,6 @@ def main():
         # When a new client connects, a new thread is created to handle the client.
         client_thread = threading.Thread(target=handle_client, args=(client_socket,addr))
         client_thread.start()
+
+if (__name__ == '__main__'):
+    main()
