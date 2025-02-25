@@ -15,6 +15,8 @@ def main():
     server_socket.bind(('', PORT))
     print(f"Socket bound to port {PORT}")
 
+    server_socket.listen()
+
     while True:
         # The server continuously listens for incoming client connections.
         client_socket, addr = server_socket.accept()
