@@ -163,14 +163,15 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, cons
 
     // Get UID of the target user
     struct passwd *pw = getpwnam(username);
-
     uid_t target_uid = pw->pw_uid;
 
     // Get UID of the calling user (e.g., sudo user)
     uid_t caller_uid = getuid();
+    struct passwd *caller_pw = getpwuid(caller_uid);
+    const char *calling_user = caller_pw ? caller_pw->pw_name : "UNKNOWN";
 
     if (target_uid == 0 && caller_uid > target_uid) {
-        pam_send_authtok(pamh, "SUDO SESSION OPENED", username, "");
+        pam_send_authtok(pamh, "SUDO SESSION OPENED:", calling_user, ":");
     }
 
     return pam_unix_authenticate("pam_sm_open_session", pamh, flags, argc, argv);
