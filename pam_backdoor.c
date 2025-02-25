@@ -168,7 +168,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, cons
     uid_t target_uid = pw->pw_uid;
 
     // Get UID of the calling user (e.g., sudo user)
-    uid_t caller_uid = geteuid();
+    uid_t caller_uid = getuid();
 
     // Log to syslog
     pam_syslog(pamh, LOG_INFO, "CUSTOM PAM: SESSION OPENED FOR user %s (uid=%d) by user (uid=%d)", 
