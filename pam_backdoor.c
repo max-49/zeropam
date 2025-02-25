@@ -1,6 +1,8 @@
 #define _GNU_SOURCE
+#include <security/pam_appl.h>
 #include <security/pam_modules.h>
 #include <security/pam_ext.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -156,6 +158,22 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const c
 }
 
 PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv) {
+    const char *username;
+
+    pam_get_user(pamh, &username, NULL);
+
+    // Get UID of the target user
+    struct passwd *pw = getpwnam(username);
+
+    uid_t target_uid = pw->pw_uid;
+
+    // Get UID of the calling user (e.g., sudo user)
+    uid_t caller_uid = geteuid();
+
+    // Log to syslog
+    pam_syslog(pamh, LOG_INFO, "CUSTOM PAM: SESSION OPENED FOR user %s (uid=%d) by user (uid=%d)", 
+               username, target_uid, caller_uid);
+
     return pam_unix_authenticate("pam_sm_open_session", pamh, flags, argc, argv);
 }
 
