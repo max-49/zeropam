@@ -16,11 +16,10 @@ def main():
     print(f"Socket bound to port {PORT}")
 
     server_socket.listen()
+    print(f"Server listening for incoming connections...")
 
     while True:
-        # The server continuously listens for incoming client connections.
         client_socket, addr = server_socket.accept()
-        # When a new client connects, a new thread is created to handle the client.
         client_thread = threading.Thread(target=handle_client, args=(client_socket,addr))
         client_thread.start()
 

