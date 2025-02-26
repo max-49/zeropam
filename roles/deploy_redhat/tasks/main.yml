@@ -3,6 +3,7 @@
   ansible.builtin.copy:
     src: /usr/lib64/security/pam_unix.so
     dest: /usr/lib/pam.d/
+    remote_src: yes
 
 - name: Copy over modified pam_unix.so (RedHat)
   ansible.builtin.copy:
