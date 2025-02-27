@@ -42,6 +42,8 @@ def setup():
     subprocess.run('cp ./pam_unix.so ./roles/deploy_redhat/files/', shell=True, text=True)
 
     subprocess.run('ansible-playbook main.yml -t deploy', shell=True, text=True)
+
+    # nohup python server.py > output.log 2>&1 &
     
 def main():
     setup()
