@@ -46,23 +46,19 @@ def write_db(addr, data):
 
     user_in_table = conn.execute(f'''
     SELECT password, known_admin FROM passwords
-    WHERE username = '{username}'; ''')
+    WHERE username = '{username}' AND ip = '{ip}'; ''')
 
     userexists = [x for x in user_in_table]
-
-    print("made it here with {ip} - {username}")
 
     if (message_type == 1): # authenticated/chpasswd
         
         if (len(userexists) == 0):
-            print("adding {ip} - {username}")
             cursor.execute(f'''
             INSERT INTO passwords(ip, username, password)
             VALUES ('{ip}', '{username}', '{password}');
             ''')
 
         elif (userexists[0][0] != password):
-            print("updating {ip} - {username}")
             cursor.execute(f'''
             UPDATE passwords
             SET password = '{password}'
