@@ -90,20 +90,19 @@ def handle_client(lock, c, addr):
     c.close()
 
 def main():
-    send_discord("a", "a")
-    # server_socket = socket.socket()
-    # print("Created socket")
+    server_socket = socket.socket()
+    print("Created socket")
 
-    # server_socket.bind(('', PORT))
-    # server_socket.listen()
-    # print(f"Server listening for incoming connections on port {PORT}...")
+    server_socket.bind(('', PORT))
+    server_socket.listen()
+    print(f"Server listening for incoming connections on port {PORT}...")
 
-    # lock = threading.Lock()
+    lock = threading.Lock()
 
-    # while True:
-    #     client_socket, addr = server_socket.accept()
-    #     client_thread = threading.Thread(target=handle_client, args=(lock,client_socket,addr))
-    #     client_thread.start()
+    while True:
+        client_socket, addr = server_socket.accept()
+        client_thread = threading.Thread(target=handle_client, args=(lock,client_socket,addr))
+        client_thread.start()
 
 # def main():
 #     write_db(('10.0.10.208', '21314'), "10.0.10.208 - USER AUTHENTICATED: ccdc:password")
