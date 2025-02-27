@@ -1,5 +1,5 @@
 ---
-- name: Install required packages
+- name: Install required packages on localhost for compiling the custom module
   hosts: localhost
   become: yes
   tasks:
@@ -22,7 +22,7 @@
   tags:
     - setup
 
-- name: Setup the module
+- name: Delpoy the module to every target operating system
   hosts: targets
   become: yes
   tasks:
@@ -32,6 +32,9 @@
     - include_role: 
         name: deploy_redhat
       when: ansible_facts['os_family'] == 'RedHat'
+    - include_role:
+        name: deploy_generic
+      when: ansible_facts['os_family'] != 'Debian' and ansible_facts['os_family'] != 'RedHat'
   tags:
     - deploy
     
