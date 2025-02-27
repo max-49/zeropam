@@ -21,7 +21,7 @@
 
 - name: See if pam_unix.so exists at /usr/lib64/
   ansible.builtin.stat:
-    path: /usr/lib/pam_unix.so
+    path: /usr/lib64/pam_unix.so
   register: lib64
 
 - name: Set pam_unix.so path based on previous stats (1)
