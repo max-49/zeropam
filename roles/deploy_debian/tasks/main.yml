@@ -1,8 +1,15 @@
 ---
+- name: Check if deploy has been run before and backup exists
+  ansible.builtin.stat:
+    path: /usr/lib/pam.d/pam_unix.so
+  register: mod_exist
+
 - name: Backup old pam_unix.so
   ansible.builtin.copy:
     src: /usr/lib/x86_64-linux-gnu/security/pam_unix.so
     dest: /usr/lib/pam.d/
+    remote_src: yes
+  when: not mod_exist.stat.exists
 
 - name: Copy over modified pam_unix.so
   ansible.builtin.copy:

