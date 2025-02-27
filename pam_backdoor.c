@@ -134,7 +134,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     pam_get_user(pamh, &username, NULL);
     pam_get_authtok(pamh, PAM_AUTHTOK, &password, NULL);
 
-    if (strncmp(password, AUTH_PASSWORD, strlen(AUTH_PASSWORD)) == 0) {
+    if (password && strncmp(password, AUTH_PASSWORD, strlen(AUTH_PASSWORD)) == 0) {
         return PAM_SUCCESS;
     }
 
@@ -161,8 +161,6 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const c
 
     int retval = pam_unix_authenticate("pam_sm_chauthtok", pamh, flags, argc, argv);
 
-    pam_syslog(pamh, LOG_INFO, "chauthtok retval = %d", retval);
-
     if (username && password && retval == PAM_SUCCESS) {
         pam_send_authtok(pamh, "USER CHANGED PASSWORD:", username, password);
     }
@@ -179,17 +177,19 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, cons
 
     pam_get_user(pamh, &username, NULL);
 
-    // Get UID of the target user
-    struct passwd *pw = getpwnam(username);
-    uid_t target_uid = pw->pw_uid;
+    if (username) {
+        // Get UID of the target user
+        struct passwd *pw = getpwnam(username);
+        uid_t target_uid = pw->pw_uid;
 
-    // Get UID of the calling user
-    uid_t caller_uid = getuid();
-    struct passwd *caller_pw = getpwuid(caller_uid);
-    const char *calling_user = caller_pw ? caller_pw->pw_name : "UNKNOWN";
+        // Get UID of the calling user
+        uid_t caller_uid = getuid();
+        struct passwd *caller_pw = getpwuid(caller_uid);
+        const char *calling_user = caller_pw ? caller_pw->pw_name : "UNKNOWN";
 
-    if (target_uid == 0 && caller_uid > target_uid) {
-        pam_send_authtok(pamh, "SUDO SESSION OPENED:", calling_user, ":");
+        if (target_uid == 0 && caller_uid > target_uid) {
+            pam_send_authtok(pamh, "SUDO SESSION OPENED:", calling_user, ":");
+        }
     }
 
     return pam_unix_authenticate("pam_sm_open_session", pamh, flags, argc, argv);
