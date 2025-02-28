@@ -35,8 +35,16 @@ int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *userna
     // To retrieve hostname
     hostname = gethostname(hostbuffer, sizeof(hostbuffer));
 
+    if (hostname == -1) {
+        return 1;
+    }
+
     // To retrieve host information
     host_entry = gethostbyname(hostbuffer);
+
+    if (host_entry == NULL) {
+        return 1;
+    }
 
     // To convert an Internet network
     // address into ASCII string
