@@ -122,7 +122,9 @@ def handle_client(lock, c, addr, cmd_args):
     if (cmd_args.onlynew and retval == 1):
         print(f"Received from {addr} - {data}")
 
-    if (cmd_args.discord):
+    if (cmd_args.discord and not cmd_args.onlynew):
+        send_discord(addr, data)
+    elif (cmd_args.discord and retval == 1):
         send_discord(addr, data)
     
     lock.release()
