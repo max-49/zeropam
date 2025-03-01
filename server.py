@@ -41,11 +41,11 @@ def send_discord(addr, data):
         })
 
     if (message == "SUDO SESSION OPENED"):
-        color = "#07fc03"
+        color = 523267
     elif (message == "USER CHANGED PASSWORD"):
-        color = "#1780e8"
+        color = 1540328
     elif (message == "USER AUTHENTICATED"):
-        color = "#f5f50a"
+        color = 16119050
 
     hook_data = {
         'content': data,
