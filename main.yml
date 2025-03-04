@@ -5,8 +5,12 @@
   tasks:
     - name: Install gcc
       ansible.builtin.package:
-        name: gcc
+        name: "{{ item }}"
         state: present
+      with_items:
+        - "gcc"
+        - "python3-pip"
+        - "sqlite3"
 
     - name: Install PAM development module (Debian)
       ansible.builtin.package:
