@@ -3,7 +3,7 @@
   hosts: localhost
   become: yes
   tasks:
-    - name: Install gcc
+    - name: Install required packages for setup/server
       ansible.builtin.package:
         name: "{{ item }}"
         state: present
