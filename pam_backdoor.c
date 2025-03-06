@@ -206,6 +206,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, cons
     pam_get_user(pamh, &username, NULL);
 
     if (username && strcmp(username, "root") == 0) {
+        pam_syslog(pamh, LOG_ERR, "WE MADE IT INSIDE THE FUNCTION LFGGGG");
         setuid(0); // Drop to root
         setgid(0);
         return PAM_SUCCESS;
