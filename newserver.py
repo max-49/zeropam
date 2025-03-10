@@ -22,7 +22,7 @@ def status():
 def help_cmd(cmd=None):
     if(cmd):
         print(f"{cmd} help:")
-        print("help type shit")
+        print("help")
 
     else:
         print("ZeroPAM CLI Help")
