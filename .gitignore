@@ -2,6 +2,7 @@
 logins.db
 .vscode/
 artifacts/
+inventory/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

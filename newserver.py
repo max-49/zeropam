@@ -81,6 +81,7 @@ def main():
             # set arg <arg name> [arg value]
             # set server <on/off>
             # set target <group/ip(s)>
+            # set default <username/password> [username/password]
             if (len(action.split()) == 1):
                 help_cmd(command)
             else:
@@ -101,7 +102,6 @@ def main():
                 help_cmd(command)
             else:
                 ping_cmd(action.split()[1])
-                print("ping action completed")
 
         elif (command == "show"):
             # show status

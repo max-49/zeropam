@@ -1,15 +1,13 @@
 import ansible_runner
 
 def ping_cmd(ip):
-    print(f"Pinging {ip}")
     r = ansible_runner.run(
         private_data_dir='.',
-        inventory="ansible/inventory.ini",
+        inventory=f"{ip}",
         host_pattern=ip,
         module='ping', 
+        extravars={
+            'ansible_user': 'ccdc',
+            'ansible_password': 'ccdc', 
+        }
     )
-    print("{}: {}".format(r.status, r.rc))
-    for each_host_event in r.events:
-        print(each_host_event['event'])
-    print("Final status:")
-    print(r.stats)
