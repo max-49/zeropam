@@ -38,7 +38,7 @@ def start_server():
 def main():
     prefix = ""
 
-    if(os.stat("utils/ansible/server_inventory.ini").st_size == 0):
+    if(os.stat("./utils/ansible/server_inventory.ini").st_size == 0):
         print("First time use detected! Setting up...")
         subprocess.run('echo "[all]" > /utils/ansible/server_inventory.ini', shell=True, text=True)
         # subprocess.run(f"sed -i '/^[all]/a{ip}' utils/ansible/server_inventory.ini", shell=True, text=True)
