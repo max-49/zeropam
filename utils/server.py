@@ -13,11 +13,30 @@ def server_args(cmd_str):
     parser.add_argument('--discord', action="store_true", help="Enable Discord Webhook (set WEBHOOK_URL env var)")
     parser.add_argument('--no-db', dest="nodb", action="store_true", help="Run the server without utilizing the database (cannot be used with --only-new)")
     parser.add_argument('--only-new', dest="onlynew", action="store_true", help="Only output new information (cannot be used with --no-db)")
+    parser.add_argument('--pwnboard', dest="pwnboard", action="store_true", help="Send Keep Alive messages to pwnboard")
+    parser.add_argument('--pwnboard-host', metavar="<PWNBOARD WEBSITE>", help="Used with --pwnboard; Pwnboard website to send POST requests to (default localhost:8080)", 
+                        type=str, dest="pwnhost", action="store", default="localhost:8080")
     return parser.parse_args() if not cmd_str else parser.parse_args(cmd_str.split())
+
+def send_pwnboard(addr, data, pwnhost):
+    ip = data.split("-")[0].strip()
+    host = f"{pwnhost}/generic"
+    data = {"ip": ip, "type": "ZeroPAM"}
+
+    try:
+        response = requests.post(host, json=data, timeout=3)
+        return True
+    except Exception as E:
+        print(E)
+        return False
 
 def send_discord(addr, data):
     ip = data.split("-")[0].strip()
     message = data.split("-")[1].split(":")[0].strip()
+
+    if (message == "KEEP ALIVE"):
+        return 0
+    
     username = data.split("-")[1].split(":")[1].strip()
     password = data.split("-")[1].split(":")[2].strip()
 
@@ -162,6 +181,9 @@ def handle_client(lock, c, addr, cmd_args):
         send_discord(addr, data)
     elif (cmd_args.discord and retval == 1):
         send_discord(addr, data)
+
+    if (cmd_args.pwnboard):
+        send_pwnboard(addr, data, cmd_args.pwnhost)
     
     lock.release()
 

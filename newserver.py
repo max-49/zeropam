@@ -8,21 +8,12 @@ import threading
 import subprocess
 import ansible_runner
 from utils.ping import ping_cmd
-from utils.server import setup
+from utils.server import setup, server_args
 from dotenv import load_dotenv
 
 server_status = False
 server_thread = None
 stop_event = threading.Event()
-
-def server_args(cmd_str):
-    parser = argparse.ArgumentParser(description="Server meant for use with ZeroPAM", exit_on_error=False)
-    parser.add_argument('-p', '--port', metavar="<LISTENING PORT>", help="Port number to listen on (default 5000)", 
-                        type=int, dest="port", action="store", default="5000")
-    parser.add_argument('--discord', action="store_true", help="Enable Discord Webhook (set WEBHOOK_URL env var)")
-    parser.add_argument('--no-db', dest="nodb", action="store_true", help="Run the server without utilizing the database (cannot be used with --only-new)")
-    parser.add_argument('--only-new', dest="onlynew", action="store_true", help="Only output new information (cannot be used with --no-db)")
-    return parser.parse_args() if not cmd_str else parser.parse_args(cmd_str.split())
 
 def status():
     global server_status
