@@ -66,6 +66,10 @@ def write_db(addr, data):
 
     ip = data.split("-")[0].strip()
     message = data.split("-")[1].split(":")[0].strip()
+
+    if (message == "KEEP ALIVE"):
+        return 0
+
     username = data.split("-")[1].split(":")[1].strip()
     password = data.split("-")[1].split(":")[2].strip()
 
