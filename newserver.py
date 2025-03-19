@@ -6,6 +6,7 @@ import sqlite3
 import argparse
 import threading
 import subprocess
+import pandas as pd
 import ansible_runner
 from utils.ping import ping_cmd
 from utils.server import setup, server_args
@@ -102,7 +103,7 @@ def main():
             if (len(action.split()) == 1):
                 help_cmd()
             else:
-                help_cmd("placeholder")
+                help_cmd(action.split()[1])
 
         elif (command == "set"):
             # set group <group name> <ip addresses>
@@ -132,7 +133,7 @@ def main():
         elif (command == "show"):
             # show status
             # show groups
-            # show db
+            # show db [host]
             # show ip
             # show args
             if (len(action.split()) == 1):
@@ -141,6 +142,21 @@ def main():
                 split_action = action.split()
                 if (split_action[1].strip() == "status"):
                     status()
+                elif (split_action[1].strip() == "args"):
+                    print(cmd_args)
+                elif (split_action[1].strip() == "db" or split_action[1].strip() == "passwords"):
+                    conn = sqlite3.connect('logins.db')
+                    cursor = conn.cursor()
+                    if (len(split_action) == 2):
+                        print(pd.read_sql_query(f'''
+                            SELECT * FROM passwords
+                        ''', conn))
+                    else:
+                        print(pd.read_sql_query(f'''
+                            SELECT * FROM passwords
+                            WHERE ip = "{split_action[2]}"
+                        ''', conn))
+                    pass
                 else:
                     print(f"Unknown argument for server: {split_action[1].strip()}")
 
