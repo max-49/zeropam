@@ -11,6 +11,7 @@
         - "gcc"
         - "python3-pip"
         - "sqlite3"
+        - "sshpass"
 
     - name: Install PAM development module (Debian)
       ansible.builtin.package:

