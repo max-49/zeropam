@@ -155,10 +155,14 @@ def main():
                 # set group <group name> <ip addresses>
                 # set target <group/ip(s)>
                 # set default <username/password> [username/password]
-                if (len(action.split()) == 1):
+                if (len(action.split()) <= 2):
                     help_cmd(command)
                 else:
-                    print("set action completed")
+                    split_action = action.split()
+                    if (split_action[1].strip() == "target"):
+                        prefix = f"({split_action[2]})"
+                    else:
+                        print(f"Unknown argument for set: {split_action[1].strip()}")
 
             elif (command == "exec"):
                 # REQ: group or ip(s) enabled
@@ -207,7 +211,7 @@ def main():
                             ''', conn))
                         pass
                     else:
-                        print(f"Unknown argument for server: {split_action[1].strip()}")
+                        print(f"Unknown argument for show: {split_action[1].strip()}")
 
             elif (command == "server"):
                 # server up
@@ -246,11 +250,11 @@ def main():
 
             else:
                 print("Unrecognized command! Type help for help!")
-    except KeyboardInterrupt:
+
+    except (KeyboardInterrupt, EOFError) as e:
         print("Bye!")
         return
         
-
 if (__name__ == '__main__'):
     main()
         
