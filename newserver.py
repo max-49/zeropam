@@ -197,13 +197,13 @@ def main():
                         if (len(split_action) == 2):
                             print(pd.read_sql_query(f'''
                                 SELECT * FROM passwords
-                                ORDER BY ip, known_admin
+                                ORDER BY ip, known_admin DESC
                             ''', conn))
                         else:
                             print(pd.read_sql_query(f'''
                                 SELECT * FROM passwords
                                 WHERE ip = "{split_action[2]}"
-                                ORDER BY known_admin
+                                ORDER BY known_admin DESC
                             ''', conn))
                         pass
                     else:
