@@ -24,13 +24,58 @@ def status():
     print("Connected IPs:")
 
 def help_cmd(cmd=None):
+    help_help = """ 
+    help [command] - Show help for CLI commands (this menu right here!)
+    """
+    set_help = """ 
+    set group <ip addresses> - Create a group of IP addresses (Not implemented)\n
+    set target <ip address/group> - Set target host or group for exec command (Not implemented)
+    """
+    exec_help = """ 
+    exec <ip address/group> <command> - Executes a command on a host or group of hosts (Not implemented)
+    """ 
+    ping_help = """ 
+    ping <ip address> - Ansible pings an IP address (WIP)
+    """ 
+    show_help = """ 
+    show status - Show server status and connected IP addresses\n
+    show args - Show backdoor server arguments\n
+    show db [host] - Show collected passwords and admin information from backdoor, can specify specific host\n
+    show passwords [host] - Alias for show db (same functionality)
+    """
+    server_help = """
+    server up - Start backdoor server\n
+    server down - Stop backdoor server (WIP)\n
+    server args <argument string> - Set server arguments (in command line argument style)
+    """ 
+
     if(cmd):
         print(f"{cmd} help:")
-        print("help")
-
+        if (cmd == "help"):
+            print(help_help)
+        elif (cmd == "set"):
+            print(set_help)
+        elif (cmd == "exec"):
+            print(exec_help)
+        elif (cmd == "ping"):
+            print(ping_help)
+        elif (cmd == "show"):
+            print(show_help)
+        elif (cmd == "server"):
+            print(server_help)
+        else:
+            print("Not a command! Type help for commands")
     else:
         print("ZeroPAM CLI Help")
-        print("- commands")
+        print("Commands:")
+        print("help [command] - Get command help information")
+        print("set <arguments> - Set CLI configuration settings")
+        print("exec <arguments> - Execute commands on connected machines")
+        print("ping <arguments> - Ping an IP or group of IP addresses")
+        print("show <arguments> - Show information")
+        print("server <arguments> - Backdoor server options")
+        print()
+        print("Use help <command> for more information about commands!")
 
 def start_listener(cmd_args):
     global server_status
@@ -134,7 +179,8 @@ def main():
             # show status
             # show groups
             # show db [host]
-            # show ip
+            # show passwords [host]
+            # show ips
             # show args
             if (len(action.split()) == 1):
                 help_cmd(command)
@@ -150,11 +196,13 @@ def main():
                     if (len(split_action) == 2):
                         print(pd.read_sql_query(f'''
                             SELECT * FROM passwords
+                            ORDER BY ip, known_admin
                         ''', conn))
                     else:
                         print(pd.read_sql_query(f'''
                             SELECT * FROM passwords
                             WHERE ip = "{split_action[2]}"
+                            ORDER BY known_admin
                         ''', conn))
                     pass
                 else:

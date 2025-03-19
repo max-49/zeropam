@@ -1,3 +1,4 @@
 python_dotenv
 argparse
 requests
+pandas
