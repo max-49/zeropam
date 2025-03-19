@@ -125,126 +125,130 @@ def main():
     print("Type help for help!")
     status()
 
-    while True:
+    try:
+        while True:
 
-        if (server_thread):
-            if (not server_thread.is_alive()):
-                print("Server down!")
-                server_status = False
+            if (server_thread):
+                if (not server_thread.is_alive()):
+                    print("Server down!")
+                    server_status = False
 
-        action = input(f"{prefix}\033[0;49;31m> \033[0m")
-        if (action.strip() == ""):
-            continue
+            action = input(f"{prefix}\033[0;49;31m> \033[0m")
+            if (action.strip() == ""):
+                continue
 
-        command = action.split()[0]
+            command = action.split()[0]
 
-        if (command in ("exit", "quit", "q")):
-            print("Bye!")
-            break
+            if (command in ("exit", "quit", "q")):
+                print("Bye!")
+                break
 
-        elif (command == "help"):
-            # help
-            # help <command>
-            if (len(action.split()) == 1):
-                help_cmd()
-            else:
-                help_cmd(action.split()[1])
-
-        elif (command == "set"):
-            # set group <group name> <ip addresses>
-            # set target <group/ip(s)>
-            # set default <username/password> [username/password]
-            if (len(action.split()) == 1):
-                help_cmd(command)
-            else:
-                print("set action completed")
-
-        elif (command == "exec"):
-            # REQ: group or ip(s) enabled
-            # exec <command>
-            if (len(action.split()) == 1):
-                help_cmd(command)
-            else:
-                print("exec action completed")
-
-        elif (command == "ping"):
-            # ping <group>
-            # ping <ip addresses>
-            if (len(action.split()) == 1):
-                help_cmd(command)
-            else:
-                ping_cmd(action.split()[1])
-
-        elif (command == "show"):
-            # show status
-            # show groups
-            # show db [host]
-            # show passwords [host]
-            # show ips
-            # show args
-            if (len(action.split()) == 1):
-                help_cmd(command)
-            else:
-                split_action = action.split()
-                if (split_action[1].strip() == "status"):
-                    status()
-                elif (split_action[1].strip() == "args"):
-                    print(cmd_args)
-                elif (split_action[1].strip() == "db" or split_action[1].strip() == "passwords"):
-                    conn = sqlite3.connect('logins.db')
-                    cursor = conn.cursor()
-                    if (len(split_action) == 2):
-                        print(pd.read_sql_query(f'''
-                            SELECT * FROM passwords
-                            ORDER BY ip, known_admin
-                        ''', conn))
-                    else:
-                        print(pd.read_sql_query(f'''
-                            SELECT * FROM passwords
-                            WHERE ip = "{split_action[2]}"
-                            ORDER BY known_admin
-                        ''', conn))
-                    pass
+            elif (command == "help"):
+                # help
+                # help <command>
+                if (len(action.split()) == 1):
+                    help_cmd()
                 else:
-                    print(f"Unknown argument for server: {split_action[1].strip()}")
+                    help_cmd(action.split()[1])
 
-        elif (command == "server"):
-            # server up
-            # server down
-            # server args <arg string>
-            if (len(action.split()) == 1):
-                help_cmd(command)
-            else:
-                split_action = action.split()
-                if (split_action[1].strip() == "up"):
-                    if (not cmd_args or cmd_args == ""):
-                        cmd_args = server_args("")
-                        print("Running Server with default arguments")
+            elif (command == "set"):
+                # set group <group name> <ip addresses>
+                # set target <group/ip(s)>
+                # set default <username/password> [username/password]
+                if (len(action.split()) == 1):
+                    help_cmd(command)
+                else:
+                    print("set action completed")
+
+            elif (command == "exec"):
+                # REQ: group or ip(s) enabled
+                # exec <command>
+                if (len(action.split()) == 1):
+                    help_cmd(command)
+                else:
+                    print("exec action completed")
+
+            elif (command == "ping"):
+                # ping <group>
+                # ping <ip addresses>
+                if (len(action.split()) == 1):
+                    help_cmd(command)
+                else:
+                    ping_cmd(action.split()[1])
+
+            elif (command == "show"):
+                # show status
+                # show groups
+                # show db [host]
+                # show passwords [host]
+                # show ips
+                # show args
+                if (len(action.split()) == 1):
+                    help_cmd(command)
+                else:
+                    split_action = action.split()
+                    if (split_action[1].strip() == "status"):
+                        status()
+                    elif (split_action[1].strip() == "args"):
                         print(cmd_args)
-                    start_listener(cmd_args)
-
-                elif (split_action[1].strip() == "down"):
-                    stop_listener()
-
-                elif (split_action[1].strip() == "args"):
-                    if (len(split_action) == 2):
-                        print("Must provide argument when using server args!")
-                    elif (split_action[2] == "reset"):
-                        print("Server arguments reset!")
-                        cmd_args = server_args("")
+                    elif (split_action[1].strip() == "db" or split_action[1].strip() == "passwords"):
+                        conn = sqlite3.connect('logins.db')
+                        cursor = conn.cursor()
+                        if (len(split_action) == 2):
+                            print(pd.read_sql_query(f'''
+                                SELECT * FROM passwords
+                                ORDER BY ip, known_admin
+                            ''', conn))
+                        else:
+                            print(pd.read_sql_query(f'''
+                                SELECT * FROM passwords
+                                WHERE ip = "{split_action[2]}"
+                                ORDER BY known_admin
+                            ''', conn))
+                        pass
                     else:
-                        try:
-                            cmd_args = server_args(" ".join(split_action[2:]))
-                            print("Success! New Server Arguments:")
-                            print(cmd_args)
-                        except (argparse.ArgumentError, SystemExit) as E:
-                            print(f"ERROR PARSING ARGUMENTS: {E}")
+                        print(f"Unknown argument for server: {split_action[1].strip()}")
 
+            elif (command == "server"):
+                # server up
+                # server down
+                # server args <arg string>
+                if (len(action.split()) == 1):
+                    help_cmd(command)
                 else:
-                    print(f"Unknown argument for server: {action.split()[1].strip()}")
+                    split_action = action.split()
+                    if (split_action[1].strip() == "up"):
+                        if (not cmd_args or cmd_args == ""):
+                            cmd_args = server_args("")
+                            print("Running Server with default arguments")
+                            print(cmd_args)
+                        start_listener(cmd_args)
 
-        else:
-            print("Unrecognized command! Type help for help!")
+                    elif (split_action[1].strip() == "down"):
+                        stop_listener()
+
+                    elif (split_action[1].strip() == "args"):
+                        if (len(split_action) == 2):
+                            print("Must provide argument when using server args!")
+                        elif (split_action[2] == "reset"):
+                            print("Server arguments reset!")
+                            cmd_args = server_args("")
+                        else:
+                            try:
+                                cmd_args = server_args(" ".join(split_action[2:]))
+                                print("Success! New Server Arguments:")
+                                print(cmd_args)
+                            except (argparse.ArgumentError, SystemExit) as E:
+                                print(f"ERROR PARSING ARGUMENTS: {E}")
+
+                    else:
+                        print(f"Unknown argument for server: {action.split()[1].strip()}")
+
+            else:
+                print("Unrecognized command! Type help for help!")
+    except KeyboardInterrupt:
+        print("Bye!")
+        return
         
 
 if (__name__ == '__main__'):
