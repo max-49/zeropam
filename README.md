@@ -1,5 +1,5 @@
-# PAM C2 (for educational purposes) (A.K.A ZeroPAM)
-Custom PAM module proxies all authentication requests and sends credentials to a remote server (built for educational purposes to understand how PAM works on the backend)
+# ZeroPAM
+Custom PAM module for use during red team/blue team competition that proxies all authentication requests and sends credentials to a remote server
 
 ## Setup:
 1. Write all target IP addresses in inventory.ini under the [targets] section
