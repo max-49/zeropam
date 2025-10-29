@@ -2,8 +2,8 @@
 set -euo pipefail
 
 DISTRO=$1
-PATCH=$(realpath patches/zeropam-1-5-3.patch)
-OUTDIR=$(realpath output)
+PATCH=$(realpath ./dynamic_build/patches/zeropam-1-5-3.patch)
+OUTDIR=$(realpath ./dynamic_build/output)
 mkdir -p "$OUTDIR"
 
 case "$DISTRO" in

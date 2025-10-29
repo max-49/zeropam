@@ -25,6 +25,11 @@
     pam_file_src: "pam_unix_rhel.so"
   when: pam_file_src is not defined
 
+- name: Ensure libtirpc is installed
+  ansible.builtin.package:
+    name: libtirpc
+    state: present
+    
 - name: Disable SELinux (requires reboot)
   ansible.builtin.lineinfile:
     path: /etc/selinux/config
