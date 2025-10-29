@@ -1,0 +1,12 @@
+FROM rockylinux:9
+RUN dnf -y install epel-release
+RUN dnf config-manager --set-enabled crb
+RUN dnf makecache
+RUN dnf -y --enablerepo=devel install \
+    rpm-build dnf-plugins-core gcc make autoconf automake \
+    libtool gettext-devel git wget elinks \
+    audit-libs-devel bison docbook-dtds docbook-style-xsl flex \
+    libdb-devel libselinux-devel libxslt openssl-devel systemd-devel \
+    libeconf-devel libtirpc-devel linuxdoc-tools
+WORKDIR /build
+CMD ["bash"]
