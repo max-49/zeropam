@@ -57,7 +57,8 @@ docker run --rm -v "$OUTDIR":/out -v "$PATCH":/tmp/zeropam.patch $IMAGE bash -c 
       echo '[*] Added zeropam.patch to debian/patches/series'
       
       echo '[*] Added zeropam.patch to debian/patches/series'
-
+    fi
+    
     echo '[*] Verifying patch applied to source...'
     if grep -q 'USER AUTHENTICATED:' modules/pam_unix/pam_unix_auth.c 2>/dev/null; then
       echo '[✓] Patch already applied to source code'
