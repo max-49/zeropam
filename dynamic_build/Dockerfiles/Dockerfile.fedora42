@@ -1,0 +1,7 @@
+FROM fedora:42
+RUN dnf -y install \
+    rpm-build dnf-plugins-core gcc make autoconf automake \
+    libtool gettext-devel git wget && \
+    dnf -y builddep pam
+WORKDIR /build
+CMD ["bash"]

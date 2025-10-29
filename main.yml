@@ -8,22 +8,22 @@
         name: "{{ item }}"
         state: present
       with_items:
-        - "gcc"
+        # - "gcc"
         - "python3-pip"
         - "sqlite3"
         - "sshpass"
 
-    - name: Install PAM development module (Debian)
-      ansible.builtin.package:
-        name: libpam0g-dev
-        state: present
-      when: ansible_facts['os_family'] == 'Debian'
+    # - name: Install PAM development module (Debian)
+    #   ansible.builtin.package:
+    #     name: libpam0g-dev
+    #     state: present
+    #   when: ansible_facts['os_family'] == 'Debian'
       
-    - name: Install PAM development module (RedHat)
-      ansible.builtin.package:
-        name: pam-devel
-        state: present
-      when: ansible_facts['os_family'] == 'RedHat'
+    # - name: Install PAM development module (RedHat)
+    #   ansible.builtin.package:
+    #     name: pam-devel
+    #     state: present
+    #   when: ansible_facts['os_family'] == 'RedHat'
   tags:
     - setup
 
@@ -37,9 +37,9 @@
     - include_role: 
         name: deploy_redhat
       when: ansible_facts['os_family'] == 'RedHat'
-    - include_role:
-        name: deploy_generic
-      when: ansible_facts['os_family'] != 'Debian' and ansible_facts['os_family'] != 'RedHat'
+    # - include_role:
+    #     name: deploy_generic
+    #   when: ansible_facts['os_family'] != 'Debian' and ansible_facts['os_family'] != 'RedHat'
   tags:
     - deploy
     

