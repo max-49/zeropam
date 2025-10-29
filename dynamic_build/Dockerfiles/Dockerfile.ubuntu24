@@ -1,7 +1,9 @@
 FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
+RUN sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/ubuntu.sources
 RUN apt-get update && apt-get install -y \
     build-essential fakeroot devscripts quilt dpkg-dev \
     apt-src vim curl
+RUN apt-get update && apt-get build-dep -y pam
 WORKDIR /build
 CMD ["bash"]

