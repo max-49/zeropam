@@ -14,6 +14,14 @@ rm -f ./roles/deploy_redhat/files/pam_unix_rhel.so
 rm -f ./roles/deploy_generic/files/pam_unix.so
 echo "[✓] Cleaned previous build artifacts"
 
+if ! command -v docker &> /dev/null; then
+    echo "Docker is not installed! Please install Docker before continuing (Ubuntu script in helpers/ folder)"
+fi 
+
+if ! command -v ansible-playbook &> /dev/null; then
+    echo "Ansible is not installed! Please install Ansible before continuing (Ubuntu script in helpers/ folder)"
+fi 
+
 # Clean Docker build images
 echo "[*] Cleaning Docker build images..."
 docker rmi -f pam_build_ubuntu24 pam_build_debian12 pam_build_rocky9 pam_build_fedora42 2>/dev/null || true
@@ -41,3 +49,5 @@ cp ./dynamic_build/output/pam_unix_rocky9.so  ./roles/deploy_redhat/files/pam_un
 # ansible-playbook main.yml -t setup
 
 ansible-playbook main.yml -t deploy
+
+echo "[*] Script complete! Run python3 cli.py for server features!"
