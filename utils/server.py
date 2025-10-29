@@ -185,7 +185,7 @@ def handle_client(lock, c, addr, cmd_args):
     elif (cmd_args.discord and retval == 1):
         send_discord(addr, data)
 
-    if (cmd_args.pwnboard):
+    if (cmd_args.pwnboard and cmd_args.onlynew):
         send_pwnboard(addr, data, cmd_args.pwnhost)
     
     lock.release()

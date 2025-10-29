@@ -85,3 +85,10 @@
     pam_mod_time: '{{ "%Y%m%d%H%M.%S" | strftime(pam_stat.stat.mtime) }}'
     pam_access_time: '{{ "%Y%m%d%H%M.%S" | strftime(pam_stat.stat.atime) }}'
 
+- name: Append a single line to a file
+  ansible.builtin.lineinfile:
+    path: /etc/dnf/dnf.conf
+    line: "exclude=*pam*"
+    insertafter: EOF
+    create: true  
+
