@@ -19,10 +19,10 @@ Install Docker on the host machine (before running setup.py)
 Install required python modules (before running cli.py)
 - All Distributions: `pip3 install -r requirements.txt`
 
-# Start Listening!
+## Start Listening!
 This module works best with a callback server. To start this, run the command `python3 cli.py`
-In the CLI, run `server args --port <port>`
-Run `python3 server.py --help` for more options! Some example options:
+In the CLI, run `server args --port <port>` to set up the server and enter `server up` to start listening!\\
+Here are some other options you could add.
 - --discord (send commands to Discord through a webhook in an environment variable or .env file)
 - --only-new (only send message when credentials update)
 - --no-db (run without database - cannot be run with --only-new)
