@@ -90,5 +90,4 @@
     path: /etc/dnf/dnf.conf
     line: "exclude=*pam*"
     insertafter: EOF
-    create: true  
-
+    create: true

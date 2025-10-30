@@ -75,8 +75,8 @@
 
 - name: Add exclusion to APT to prevent reinstall of PAM
   ansible.builtin.copy:
-    src: "libpam-apt-pin"
-    dest: /etc/apt/preferences.d/libpam-apt-pin
+    src: "ubuntu-pro-pam-esm"
+    dest: /etc/apt/preferences.d/ubuntu-pro-pam-esm
     owner: root
     group: root
     mode: 0644
