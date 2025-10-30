@@ -153,7 +153,7 @@ def write_db(addr, data):
                 ''')
                 retval = 1
         else:
-            print("no clue how you got here (user got root without authenticating)")
+            print("Got root without authenticating")
             retval = -1
 
     else:
@@ -166,7 +166,14 @@ def write_db(addr, data):
     return retval
 
 def handle_client(lock, c, addr, cmd_args):
-    data = c.recv(1024).decode()
+    raw_data = c.recv(1024)
+    try:
+        data = raw_data.decode()
+    except UnicodeDecodeError:
+        print("Unicode Decode Error: ")
+        print(f"Raw Data: {raw_data}")
+        c.close()
+        return
 
     if (not cmd_args.onlynew):
         print(f"Received from {addr} - {data}")
