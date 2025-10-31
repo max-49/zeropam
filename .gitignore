@@ -178,3 +178,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+*/dynamic_build/patches/*.patch

@@ -8,6 +8,7 @@ mkdir -p "$OUTDIR"
 
 case "$DISTRO" in
   ubuntu24) DOCKERFILE="./dynamic_build/Dockerfiles/Dockerfile.ubuntu24" ;;
+  ubuntu22) DOCKERFILE="./dynamic_build/Dockerfiles/Dockerfile.ubuntu22" ;;
   debian12) DOCKERFILE="./dynamic_build/Dockerfiles/Dockerfile.debian12" ;;
   rocky9)   DOCKERFILE="./dynamic_build/Dockerfiles/Dockerfile.rocky9" ;;
   fedora42) DOCKERFILE="./dynamic_build/Dockerfiles/Dockerfile.fedora42" ;;
@@ -29,7 +30,19 @@ docker run --rm -v "$OUTDIR":/out -v "$PATCH":/tmp/zeropam.patch $IMAGE bash -c 
     cd pam-*
     
     # For Debian/Ubuntu, add patch to the patches-applied directory which persists through clean
-    if [[ '$DISTRO' == debian* ]]; then
+    if [[ '$DISTRO' == ubuntu24 ]]; then
+      mkdir -p debian/patches/
+      cp /tmp/zeropam.patch debian/patches/zeropam.patch
+      
+      # Add to patches/series so it gets applied during build
+      if [ -f debian/patches/series ]; then
+        echo 'zeropam.patch' >> debian/patches/series
+      else
+        echo 'zeropam.patch' > debian/patches/series
+      fi
+      
+      echo '[*] Added zeropam.patch to debian/patches/series'
+    else
       mkdir -p debian/patches-applied/
       cp /tmp/zeropam.patch debian/patches-applied/zeropam.patch
       
@@ -43,20 +56,6 @@ docker run --rm -v "$OUTDIR":/out -v "$PATCH":/tmp/zeropam.patch $IMAGE bash -c 
       echo '[*] Added zeropam.patch to debian/patches-applied/series'
       
       echo '[*] Added zeropam.patch to debian/patches-applied/series'
-    else
-      mkdir -p debian/patches/
-      cp /tmp/zeropam.patch debian/patches/zeropam.patch
-      
-      # Add to patches/series so it gets applied during build
-      if [ -f debian/patches/series ]; then
-        echo 'zeropam.patch' >> debian/patches/series
-      else
-        echo 'zeropam.patch' > debian/patches/series
-      fi
-      
-      echo '[*] Added zeropam.patch to debian/patches/series'
-      
-      echo '[*] Added zeropam.patch to debian/patches/series'
     fi
 
     echo '[*] Verifying patch applied to source...'

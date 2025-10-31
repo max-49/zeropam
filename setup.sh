@@ -6,6 +6,7 @@ echo "[*] Cleaning previous build artifacts..."
 rm -f ./dynamic_build/output/*.so
 rm -f ./dynamic_build/output/*.spec
 rm -f ./roles/deploy_debian/files/ubuntu-24.04/*.so
+rm -f ./roles/deploy_debian/files/ubuntu-22.04/*.so
 rm -f ./roles/deploy_debian/files/debian-12/*.so
 rm -f ./roles/deploy_redhat/files/rocky-9/*.so
 rm -f ./roles/deploy_redhat/files/fedora-42/*.so
@@ -31,6 +32,7 @@ cp ./zeropam-1-5-3.patch ./dynamic_build/patches/zeropam-1-5-3.patch
 
 chmod +x ./dynamic_build/scripts/build_for_distro.sh
 
+./dynamic_build/scripts/build_for_distro.sh ubuntu22
 ./dynamic_build/scripts/build_for_distro.sh ubuntu24
 ./dynamic_build/scripts/build_for_distro.sh debian12
 ./dynamic_build/scripts/build_for_distro.sh rocky9
@@ -45,8 +47,6 @@ cp ./dynamic_build/output/pam_unix_fedora42.so  ./roles/deploy_redhat/files/fedo
 # Copy over fallback modules in case distro not found
 cp ./dynamic_build/output/pam_unix_ubuntu24.so  ./roles/deploy_debian/files/pam_unix_deb.so
 cp ./dynamic_build/output/pam_unix_rocky9.so  ./roles/deploy_redhat/files/pam_unix_rhel.so
-
-# ansible-playbook main.yml -t setup
 
 ansible-playbook main.yml -t deploy
 

