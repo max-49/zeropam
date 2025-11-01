@@ -119,9 +119,11 @@ def write_db(addr, data):
         PRIMARY KEY (ip, username)
     ); ''')
 
-    user_in_table = conn.execute(f'''
-    SELECT password, known_admin FROM passwords
-    WHERE username = '{username}' AND ip = '{ip}'; ''')
+    # Use parameterized queries to avoid SQL injection and ensure correctness
+    user_in_table = conn.execute(
+        'SELECT password, known_admin FROM passwords WHERE username = ? AND ip = ?;',
+        (username, ip)
+    )
 
     userexists = [x for x in user_in_table]
 
@@ -129,18 +131,18 @@ def write_db(addr, data):
     if (message_type == 1): # authenticated/chpasswd
         
         if (len(userexists) == 0):
-            cursor.execute(f'''
-            INSERT INTO passwords(ip, username, password)
-            VALUES ('{ip}', '{username}', '{password}');
-            ''')
+            cursor.execute(
+                'INSERT INTO passwords(ip, username, password) VALUES (?, ?, ?);',
+                (ip, username, password)
+            )
             retval = 1
 
         elif (userexists[0][0] != password):
-            cursor.execute(f'''
-            UPDATE passwords
-            SET password = '{password}'
-            WHERE username = '{username}';
-            ''')
+            print(f"Updating password for user {username}...")
+            cursor.execute(
+                'UPDATE passwords SET password = ? WHERE username = ? AND ip = ?;',
+                (password, username, ip)
+            )
             retval = 1
 
         elif (userexists[0][0] == password):
@@ -154,11 +156,10 @@ def write_db(addr, data):
 
         if (len(userexists) != 0):
             if (userexists[0][1] != 1):
-                cursor.execute(f'''
-                UPDATE passwords
-                SET known_admin = 1
-                WHERE username = '{username}';
-                ''')
+                cursor.execute(
+                    'UPDATE passwords SET known_admin = 1 WHERE username = ? AND ip = ?;',
+                    (username, ip)
+                )
                 retval = 1
         else:
             print("Got root without authenticating")
