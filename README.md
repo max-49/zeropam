@@ -34,5 +34,4 @@ Here are some other options you could add.
 
 ## Todo
 - Encrypt message being sent from client
-- Create C2 to go alongside ZeroPAM
-- Officially include Arch/SUSE category of target machine
+- Support more distros
