@@ -34,7 +34,6 @@ docker run --rm -v "$OUTDIR":/out -v "$PATCH":/tmp/zeropam.patch "$IMAGE" bash -
     
     # For Debian/Ubuntu, add patch to the patches-applied directory which persists through clean
     if [[ '$DISTRO' == ubuntu24 ]]; then
-      export DEB_LDFLAGS_APPEND = -L/path/to/lib -lldpasswd
       mkdir -p debian/patches/
       cp /tmp/zeropam.patch debian/patches/zeropam.patch
       
