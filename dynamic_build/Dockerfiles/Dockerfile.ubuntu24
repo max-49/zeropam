@@ -5,11 +5,11 @@ RUN apt-get update && apt-get install -y \
     build-essential fakeroot devscripts quilt dpkg-dev \
     apt-src vim curl
 RUN apt-get update && apt-get build-dep -y pam
-COPY ../ldpasswd/include/ldpasswd.h /usr/local/include/ldpasswd
-COPY ../ldpasswd/lib/libldpasswd.a /usr/local/lib
+COPY ldpasswd/include/ldpasswd.h /usr/local/include/ldpasswd
+COPY ldpasswd/lib/libldpasswd.a /usr/local/lib/
 WORKDIR /build
 
-CMD 'export CFLAGS="$CFLAGS -I/usr/local/include"'
-CMD 'export LDFLAGS="$LDFLAGS -L/usr/local/lib -lcustom"'
+ENV CFLAGS="${CFLAGS} -I/usr/local/include"
+ENV LDFLAGS="${LDFLAGS} -L/usr/local/lib -lcustom"
 
 CMD ["bash"]

@@ -18,10 +18,10 @@ esac
 IMAGE="pam_build_${DISTRO}"
 
 echo "[*] Building container image for $DISTRO..."
-docker build -t $IMAGE -f $DOCKERFILE .
+docker build -t "$IMAGE" -f "$DOCKERFILE" .
 
 echo "[*] Running build process for $DISTRO..."
-docker run --rm -v "$OUTDIR":/out -v "$PATCH":/tmp/zeropam.patch $IMAGE bash -c "
+docker run --rm -v "$OUTDIR":/out -v "$PATCH":/tmp/zeropam.patch "$IMAGE" bash -c "
   set -e
   mkdir -p /build && cd /build
 
