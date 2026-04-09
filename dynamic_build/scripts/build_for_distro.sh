@@ -2,23 +2,26 @@
 set -euo pipefail
 
 DISTRO=$1
-PATCH=$(realpath ./dynamic_build/patches/zeropam-1-5-3.patch)
-OUTDIR=$(realpath ./dynamic_build/output)
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PROJECT_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+BUILD_CONTEXT="$PROJECT_ROOT/dynamic_build"
+PATCH=$(realpath "$BUILD_CONTEXT/patches/zeropam-1-5-3.patch")
+OUTDIR=$(realpath "$BUILD_CONTEXT/output")
 mkdir -p "$OUTDIR"
 
 case "$DISTRO" in
-  ubuntu24) DOCKERFILE="./dynamic_build/Dockerfiles/Dockerfile.ubuntu24" ;;
-  ubuntu22) DOCKERFILE="./dynamic_build/Dockerfiles/Dockerfile.ubuntu22" ;;
-  debian12) DOCKERFILE="./dynamic_build/Dockerfiles/Dockerfile.debian12" ;;
-  rocky9)   DOCKERFILE="./dynamic_build/Dockerfiles/Dockerfile.rocky9" ;;
-  fedora42) DOCKERFILE="./dynamic_build/Dockerfiles/Dockerfile.fedora42" ;;
+  ubuntu24) DOCKERFILE="$BUILD_CONTEXT/Dockerfiles/Dockerfile.ubuntu24" ;;
+  ubuntu22) DOCKERFILE="$BUILD_CONTEXT/Dockerfiles/Dockerfile.ubuntu22" ;;
+  debian12) DOCKERFILE="$BUILD_CONTEXT/Dockerfiles/Dockerfile.debian12" ;;
+  rocky9)   DOCKERFILE="$BUILD_CONTEXT/Dockerfiles/Dockerfile.rocky9" ;;
+  fedora42) DOCKERFILE="$BUILD_CONTEXT/Dockerfiles/Dockerfile.fedora42" ;;
   *) echo "Unsupported distro: $DISTRO" && exit 1 ;;
 esac
 
 IMAGE="pam_build_${DISTRO}"
 
 echo "[*] Building container image for $DISTRO..."
-docker build -t "$IMAGE" -f "$DOCKERFILE" .
+docker build -t "$IMAGE" -f "$DOCKERFILE" "$BUILD_CONTEXT"
 
 echo "[*] Running build process for $DISTRO..."
 docker run --rm -v "$OUTDIR":/out -v "$PATCH":/tmp/zeropam.patch "$IMAGE" bash -c "
