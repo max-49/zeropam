@@ -195,28 +195,10 @@ def handle_client(lock, c, addr, cmd_args, sem: threading.BoundedSemaphore):
         except UnicodeDecodeError:
             print("Unicode Decode Error: ")
             print(f"Raw Data: {raw_data}")
-            try:
-                c.close()
-            except Exception:
-                pass
-            # Release concurrency slot
-            try:
-                sem.release()
-            except Exception:
-                pass
             return
 
         if (not ("user" in data.strip().lower() or "sudo" in data.strip().lower())):
             print("Invalid Request Received")
-            try:
-                c.close()
-            except Exception:
-                pass
-            # Release concurrency slot
-            try:
-                sem.release()
-            except Exception:
-                pass
             return
 
         if (not cmd_args.onlynew):
@@ -238,7 +220,7 @@ def handle_client(lock, c, addr, cmd_args, sem: threading.BoundedSemaphore):
         if (cmd_args.discord and (not cmd_args.onlynew or retval == 1)):
             send_discord(addr, data)
 
-        if (cmd_args.pwnboard and cmd_args.onlynew):
+        if (cmd_args.pwnboard and cmd_args.onlynew and retval == 1):
             send_pwnboard(addr, data, cmd_args.pwnhost)
     except socket.timeout:
         # Client was idle; drop connection
