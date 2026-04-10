@@ -197,9 +197,9 @@ def handle_client(lock, c, addr, cmd_args, sem: threading.BoundedSemaphore):
             print(f"Raw Data: {raw_data}")
             return
 
-        if (not data.startswith("USER") and not data.startswith("SUDO")):
-            print("Invalid Request Received")
-            return
+        # if (not data.startswith("USER") and not data.startswith("SUDO")):
+        #     print("Invalid Request Received")
+        #     return
 
         if (not cmd_args.onlynew):
             # Printing can be interleaved; guard with lock for readability
