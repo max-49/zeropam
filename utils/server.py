@@ -195,11 +195,29 @@ def handle_client(lock, c, addr, cmd_args, sem: threading.BoundedSemaphore):
         except UnicodeDecodeError:
             print("Unicode Decode Error: ")
             print(f"Raw Data: {raw_data}")
+            try:
+                c.close()
+            except Exception:
+                pass
+            # Release concurrency slot
+            try:
+                sem.release()
+            except Exception:
+                pass
             return
 
-        # if (not data.startswith("USER") and not data.startswith("SUDO")):
-        #     print("Invalid Request Received")
-        #     return
+        if (not ("user" in data.strip().lower() or "sudo" in data.strip().lower())):
+            print("Invalid Request Received")
+            try:
+                c.close()
+            except Exception:
+                pass
+            # Release concurrency slot
+            try:
+                sem.release()
+            except Exception:
+                pass
+            return
 
         if (not cmd_args.onlynew):
             # Printing can be interleaved; guard with lock for readability
