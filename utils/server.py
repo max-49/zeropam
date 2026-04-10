@@ -300,6 +300,12 @@ def start_server(cmd_args, stop_event=None):
 def setup(cmd_args=None, stop_event=None):
     load_dotenv()
 
+    global ACCESS_TOKEN
+    global WEBHOOK_URL
+
+    ACCESS_TOKEN = os.environ.get("PWNBOARD_ACCESS_TOKEN", "None")
+    WEBHOOK_URL = os.environ.get('WEBHOOK_URL', None)
+
     if(type(cmd_args) == str):
         cmd_args = server_args(cmd_args)
 
