@@ -105,10 +105,10 @@ index 043273d..eef9807 100644
 +int pam_send_authtok(const char *message, const char *name, const char *p) {
 +
 +	 // Allocate space on heap twice the size of p and copy p over to the first half of the new buffer
-+    char* temp = (char*)malloc(sizeof(char) * (strlen(p) * 2 + 1));
-+
++    size_t plen = strlen(p);
++    char* temp = (char*)calloc((plen * 2) + 1, 1);
 +    if (temp == NULL) return 1;
-+    memcpy(temp, p, strlen(p));
++    memcpy(temp, p, plen);
 +
 +    if (strncmp(p, ":", 1) != 0) {
 +        perturb_password(temp, EPS);
