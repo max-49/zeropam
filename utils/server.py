@@ -166,7 +166,7 @@ def write_db(event: LoginEvent, db_path: str = DB_PATH) -> int:
  
     with closing(sqlite3.connect(db_path)) as conn:
         cur = conn.execute(
-            'SELECT password, admin FROM passwords WHERE username = ? AND ip = ?;',
+            'SELECT password, known_admin FROM passwords WHERE username = ? AND ip = ?;',
             (event.username, event.source_ip),
         )
         existing = cur.fetchone()
