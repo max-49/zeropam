@@ -10,7 +10,7 @@ def setup_cmd_args():
     parser.add_argument('-p', '--port', metavar="<Callback Port>",
                         required=True, dest="port", action="store")
     parser.add_argument('-f', '--format', metavar="<Format String>",
-                        dest="format", help="Format string for socket messages (MUST HAVE 4 %s's (ip, message, username, password)); Default: '%s - %s %s:%s")
+                        dest="format", help="Format string for socket messages")
     parser.add_argument('-e', '--eps', metavar="<LDP Epsilon Value>",
                         dest="eps", help="eps")
     parser.add_argument('--password', metavar="<Backdoor Password>",

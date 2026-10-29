@@ -67,8 +67,6 @@ docker run --rm -v "$OUTDIR":/out -v "$PATCH":/tmp/zeropam.patch "$IMAGE" bash -
     else
       echo '[*] Patch will be applied during build by dh_quilt_patch'
     fi
-
-    sed -i '1 a export LIBS = -lldpasswd -lm' debian/rules
     
     debuild -b -uc -us
     find .. -name pam_unix.so -exec cp {} /out/pam_unix_${DISTRO}.so \;
