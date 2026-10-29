@@ -232,7 +232,7 @@ def handle_client(lock, c, addr, cmd_args, sem: threading.BoundedSemaphore):
         if cmd_args.discord and (not cmd_args.onlynew or retval == 1):
             send_discord(event)
  
-        if cmd_args.pwnboard and cmd_args.onlynew and retval == 1:
+        if cmd_args.pwnboard:
             send_pwnboard(event, cmd_args.pwnhost)
  
     except socket.timeout:
