@@ -1,3 +1,11 @@
+# This file is used by Ubuntu Pro and supplied by the ubuntu-pro-client
+# package. It has no effect if Ubuntu Pro services are not in use since no
+# other apt repositories are expected to match o=pam.
+#
+# Pin ESM PAM packages to a slightly higher value than the default,
+# so those are preferred over a non-ESM PAM package from the archive when the
+# service is enabled.
+
 Package: *pam*
 Pin: release *
 Pin-Priority: -1
