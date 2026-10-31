@@ -380,7 +380,7 @@ def start_server(cmd_args, stop_event=None):
     threading.Thread(target=discord_worker, args=(discord_queue,), daemon=True).start()
  
     if db_queue is not None:
-        threading.Thread(target=db_worker, args=(db_queue, notify_pool, cmd_args), daemon=True).start()
+        threading.Thread(target=db_worker, args=(db_queue, notify_pool, discord_queue, cmd_args), daemon=True).start()
  
     server_socket = socket.socket()
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
