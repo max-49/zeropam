@@ -225,13 +225,13 @@ def dispatch_notifications(event: LoginEvent, retval: int, cmd_args, notify_pool
     rate limits per deployment, so it still goes to the general pool;
     Discord goes through the single serialized discord_queue instead,
     since that's what keeps it under Discord's rate limit."""
-    if cmd_args.discord and (not cmd_args.onlynew or retval == 1):
+    if cmd_args.discord:
         try:
             discord_queue.put_nowait(event)
         except queue.Full:
             logging.warning("Discord queue full -- dropping a notification")
  
-    if cmd_args.pwnboard and cmd_args.onlynew and retval == 1:
+    if cmd_args.pwnboard:
         try:
             notify_pool.submit(send_pwnboard, event, cmd_args.pwnhost)
         except RuntimeError:
@@ -295,7 +295,8 @@ def write_db_event(conn: sqlite3.Connection, event: LoginEvent) -> int:
     return retval
  
  
-def db_worker(db_queue: "queue.Queue", notify_pool: ThreadPoolExecutor, discord_queue: "queue.Queue", cmd_args) -> None:
+def db_worker(db_queue: "queue.Queue", notify_pool: ThreadPoolExecutor, discord_queue: "queue.Queue",
+              cmd_args) -> None:
     """Drains db_queue sequentially on a single persistent connection. When
     a burst has queued up, drains everything currently available before
     issuing one commit, which turns N fsyncs into 1 under load without
@@ -375,7 +376,10 @@ def start_server(cmd_args, stop_event=None):
     db_queue = queue.Queue(maxsize=DB_QUEUE_MAXSIZE) if not cmd_args.nodb else None
     notify_pool = ThreadPoolExecutor(max_workers=NOTIFY_WORKERS, thread_name_prefix="notify")
     client_pool = ThreadPoolExecutor(max_workers=MAX_CONCURRENT_CLIENTS, thread_name_prefix="client")
-
+ 
+    # A single queue + single worker thread for Discord: this is what keeps
+    # us under Discord's per-webhook rate limit regardless of how much
+    # traffic the server is handling.
     discord_queue: "queue.Queue" = queue.Queue(maxsize=NOTIFY_QUEUE_MAXSIZE)
     threading.Thread(target=discord_worker, args=(discord_queue,), daemon=True).start()
  
@@ -434,10 +438,11 @@ def start_server(cmd_args, stop_event=None):
             pass
         if db_queue is not None:
             db_queue.put(None)  # shutdown sentinel
-        discord_queue.put(None)
+        discord_queue.put(None)  # shutdown sentinel
         client_pool.shutdown(wait=False)
         notify_pool.shutdown(wait=False)
-
+ 
+ 
 def setup(cmd_args=None, stop_event=None):
     load_dotenv()
  
